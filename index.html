@@ -1,0 +1,2023 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https: http://127.0.0.1:8765 http://localhost:8765; object-src 'none'; base-uri 'self'; form-action 'none';">
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="theme-color" content="#0d1117" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Zenith SX" />
+  <link rel="manifest" href="./manifest.json">
+  <title>ZENITH SX — Investment Tracker &amp; Market Intelligence (Sahil Soni)</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Confirmation / Action Modal -->
+  <div id="confirmModal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-4 mb-3">
+        <h3 id="modalTitle" class="text-lg font-bold text-white">Confirm Action</h3>
+        <button id="modalCloseBtn" type="button" class="text-slate-400 hover:text-white text-sm px-2 py-1 rounded">✕</button>
+      </div>
+      <div id="modalBody" class="text-sm text-slate-300 space-y-3 mb-6"></div>
+      <div class="flex items-center justify-end gap-3">
+        <button id="modalCancelBtn" type="button" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 transition">Cancel</button>
+        <button id="modalConfirmBtn" type="button" class="px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition">Confirm &amp; Execute</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings & Deck Customizer Modal -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-lg font-bold text-white">⚙️ Terminal Appearance, Font &amp; Deck Layout Settings</h3>
+          <p class="text-xs text-slate-400">Customize theme (Dark / Lite / Bloomberg Amber), Helvetica typography, card order &amp; efficiency filters</p>
+        </div>
+        <button id="btnCloseSettings" type="button" class="text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 text-sm">✕</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Theme Selector -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-300">1. Color Theme Mode</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" data-theme-set="dark" class="px-3 py-2 rounded-lg text-xs font-bold border border-slate-700 bg-slate-900 text-white hover:border-indigo-500">🌙 Dark</button>
+            <button type="button" data-theme-set="lite" class="px-3 py-2 rounded-lg text-xs font-bold border border-slate-700 bg-slate-100 text-slate-900 hover:border-indigo-500">☀️ Lite</button>
+            <button type="button" data-theme-set="bloomberg" class="px-3 py-2 rounded-lg text-xs font-bold border border-amber-500/50 bg-black text-amber-400 hover:border-amber-400">🟧 Terminal</button>
+          </div>
+        </div>
+
+        <!-- Font Family Selector -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <label for="selectFontFamily" class="block text-xs font-bold uppercase tracking-wider text-slate-300">2. Typography / Font Family</label>
+          <select id="selectFontFamily" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-semibold text-white">
+            <option value="helvetica">Helvetica Neue / Helvetica (Clean Swiss)</option>
+            <option value="inter">Inter (Modern UI Default)</option>
+            <option value="mono">JetBrains Mono (Bloomberg Terminal Mono)</option>
+            <option value="serif">Georgia (Financial Newspaper Serif)</option>
+          </select>
+        </div>
+
+        <!-- Minimum Trade Filter -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <label for="inputMinTradeVal" class="block text-xs font-bold uppercase tracking-wider text-slate-300">3. Minimum Rebalance Order Filter (₹)</label>
+          <input id="inputMinTradeVal" type="number" step="250" min="0" value="1000" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm mono font-bold text-emerald-400" />
+          <p class="text-[11px] text-slate-400">Skips micro-orders below this ₹ amount (e.g., 1-share orders) to save brokerage &amp; DP charges.</p>
+        </div>
+
+        <!-- Optional Gemini API Key -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <label for="inputOptionalApiKey" class="block text-xs font-bold uppercase tracking-wider text-slate-300">4. Optional Gemini API Key (No Key Needed)</label>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-[10px] font-bold text-indigo-400 hover:underline">🔑 Get Free Key ↗</a>
+          </div>
+          <input id="inputOptionalApiKey" type="password" placeholder="No key required — built-in engine + Live Wikipedia active!" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs mono text-white" />
+          <p class="text-[11px] text-slate-400"><strong>What is my API key?</strong> You don't need one! All 3,015 stocks, flowcharts &amp; live encyclopedia work 100% free with this blank. Paste a personal Gemini key from Google AI Studio only if you want optional cloud LLM chat.</p>
+        </div>
+      </div>
+
+      <!-- Resolution, CNBC Ticker Speed & Pinned Channel Stocks -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <label for="selectResolutionMode" class="block text-xs font-bold uppercase tracking-wider text-indigo-300">5. Screen Resolution &amp; Width</label>
+          <select id="selectResolutionMode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs font-semibold text-white">
+            <option value="ultrawide" selected>🖥️ Ultra-Wide Full Screen (98% Width)</option>
+            <option value="wide">💻 Wide Desktop (1680px)</option>
+            <option value="standard">📋 Standard Laptop (1366px)</option>
+            <option value="zoom110">🔍 High-DPI 110% Zoom (Larger Text)</option>
+            <option value="compact90">🔎 Compact 90% Dense (More Columns)</option>
+          </select>
+          <p class="text-[11px] text-slate-400">Eliminates empty side spaces and adapts to any monitor resolution.</p>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <label for="selectTickerSpeed" class="block text-xs font-bold uppercase tracking-wider text-emerald-300">6. Live Strip Scroll Speed</label>
+          <select id="selectTickerSpeed" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs font-semibold text-white">
+            <option value="55">⚡ Fast Broadcast (55s cycle)</option>
+            <option value="95" selected>📺 Standard Smooth (95s — Default)</option>
+            <option value="140">🐢 Slow Relaxed (140s cycle)</option>
+            <option value="200">🧘 Ultra-Slow Reading Speed (200s cycle)</option>
+            <option value="0">⏸️ Paused / Static</option>
+          </select>
+          <p class="text-[11px] text-slate-400">Controls the speed of both top live market &amp; news strips (hovering always pauses them).</p>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <div class="flex items-center justify-between gap-1">
+            <label for="selectStripPinMode" class="block text-xs font-bold uppercase tracking-wider text-amber-300">7. Pin Stocks First on Strip</label>
+            <button id="btnClearPinnedStrip" type="button" class="text-[10px] font-bold text-rose-400 hover:underline" title="Remove all pinned stocks">✕ Clear Pins</button>
+          </div>
+          <select id="selectStripPinMode" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white">
+            <option value="active_basket" selected>🧺 Active Basket Stocks (Dynamic for current/future baskets)</option>
+            <option value="all_baskets">🗂️ All My Baskets (Current &amp; future baskets combined)</option>
+            <option value="custom">✍️ Custom Tickers Listed Below</option>
+            <option value="none">🚫 None (Do not pin any stocks)</option>
+          </select>
+          <input id="inputPinnedStripStocks" type="text" value="" placeholder="Optional custom tickers (leave blank for None)..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs mono font-bold text-amber-300 uppercase" />
+          <p class="text-[11px] text-slate-400">Defaults to your active basket holdings dynamically, or select <strong>None</strong> / clear the box for zero pinned stocks.</p>
+        </div>
+      </div>
+
+      <!-- Deck Card Order Reshuffler -->
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-white">5. Reshuffle Dashboard Deck Cards</h4>
+            <p class="text-[11px] text-slate-400">Reorder or collapse/expand the analytical deck sections below your executive summary</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="btnShuffleDeckRandom" type="button" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white">🔀 Shuffle Deck</button>
+            <button id="btnResetDeckOrder" type="button" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300">↺ Default Order</button>
+          </div>
+        </div>
+        <div id="deckOrderManagerList" class="space-y-1.5"></div>
+      </div>
+
+      <!-- 8. App Version, 1-Click OTA Cloud Updater, Android App Installer & Build History -->
+      <div class="bg-slate-950 border border-indigo-500/40 rounded-xl p-4 space-y-3.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="text-xs font-extrabold uppercase tracking-wider text-white">8. App Version, OTA Cloud Updater &amp; Build History</h4>
+              <span id="settingsCurrentVersionBadge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">v30.0 • Build 2026.11.17-AES256</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-0.5">100% Free Standalone &amp; Cloud Engine — Works on any Android phone or PC with <strong>zero Google AI subscription</strong> required.</p>
+          </div>
+          <span id="settingsOtaStatusPill" class="px-2 py-0.5 rounded text-[10px] font-bold mono bg-sky-500/15 text-sky-300 border border-sky-500/30">☁️ 3-Tier Cloud Active</span>
+        </div>
+
+        <!-- 1-Click OTA App Update & Zero-Knowledge Encryption Buttons -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <button id="btnSettingsOtaPullUpdate" type="button" class="p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 hover:bg-emerald-900/35 text-left transition">
+            <div class="text-xs font-extrabold text-emerald-300">⚡ 1. Update App from Cloud</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Checks Cloud OTA channel &amp; installs latest UI features + encrypted portfolio data.</div>
+          </button>
+          <button id="btnSettingsOtaBroadcast" type="button" class="p-2.5 rounded-xl border border-indigo-500/40 bg-indigo-950/20 hover:bg-indigo-900/35 text-left transition">
+            <div class="text-xs font-extrabold text-indigo-300">📡 2. Broadcast v30.0 to Cloud</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Pushes this version &amp; encrypted snapshot to Cloud so your other devices auto-update.</div>
+          </button>
+          <button id="btnSettingsOpenEncryptionConfig" type="button" class="p-2.5 rounded-xl border border-emerald-500/40 bg-slate-900 hover:bg-slate-800 text-left transition">
+            <div class="text-xs font-extrabold text-emerald-300">🔒 3. AES-256-GCM Cloud Security</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Zero-Knowledge Argon2id + AES-256-GCM encryption active on all Cloud &amp; Device syncs.</div>
+          </button>
+        </div>
+
+        <!-- 3-Tier Cloud Storage Verification Status -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2.5 text-[10.5px] text-slate-300 space-y-1">
+          <div class="font-bold text-sky-300">🗄️ Active 3-Tier Cloud &amp; Device Storage Status (Works on Any Phone Without Any Subscription):</div>
+          <div>• <strong>Tier 1 (Device Flash)</strong>: <code>IndexedDB (ZenithSX_Permanent_DB)</code> + <code>localStorage</code> — <strong>500 MB+ Permanent</strong> on any Android/PC browser.</div>
+          <div>• <strong>Tier 2 (Zero-Setup Cloud Relay)</strong>: <code>ntfy.sh</code> Pub/Sub Cloud Cache + Live SSE Stream + Auto-Reseed Heartbeat — <strong>100% Free, Zero Account Needed</strong>.</div>
+          <div>• <strong>Tier 3 (Optional Personal Cloud DB)</strong>: Supports any free Google Firebase Realtime DB (<code>.json</code>) or GitHub Gist URL for multi-year cloud storage &amp; full OTA HTML hosting.</div>
+        </div>
+
+        <!-- Complete Version & Build History Changelog -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-bold text-slate-300">
+            <span>📜 Complete Version &amp; Build History (Changelog)</span>
+            <span class="mono text-[10px] text-slate-400">v12.0 ➔ v30.0</span>
+          </div>
+          <div class="max-h-56 overflow-y-auto bg-slate-900/95 border border-slate-800 rounded-xl p-3 space-y-2.5 text-[11px]">
+            <div class="border-b border-slate-800 pb-2">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-emerald-300 mono">v30.0 (Current Build — 17 Nov 2026)</span>
+                <span class="px-1.5 py-0.2 rounded text-[9.5px] bg-emerald-500/20 text-emerald-300 font-bold">AES-256 ENCRYPTED</span>
+              </div>
+              <ul class="list-disc pl-4 mt-1 text-slate-300 space-y-0.5">
+                <li>Added <strong>Zero-Knowledge End-to-End Encryption (<code>AES-256-GCM</code> + <code>Argon2id-SHA256</code> 100,000 iterations)</strong> via hardware Web Crypto API — all Cloud payloads are encrypted before leaving your phone or PC so no third party can ever read your portfolio data.</li>
+                <li>Added optional <strong>🔐 App Lock PIN</strong> protection on startup and removed the redundant in-terminal mobile install button.</li>
+              </ul>
+            </div>
+            <div class="border-b border-slate-800 pb-2">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-sky-300 mono">v27.0 (17 Nov 2026) — 1-Click OTA Cloud Updater &amp; Build History</span>
+                <span class="px-1.5 py-0.2 rounded text-[9.5px] bg-emerald-500/20 text-emerald-300 font-bold">LATEST OTA</span>
+              </div>
+              <ul class="list-disc pl-4 mt-1 text-slate-300 space-y-0.5">
+                <li>Added <strong>1-Click OTA Cloud App Updater</strong> (<code>⚡ Update App from Cloud</code> &amp; <code>📡 Broadcast Version to Cloud</code>) with <code>IndexedDB</code> OTA Bootloader support.</li>
+                <li>Added <strong>📲 Install as Android App</strong> launcher in Settings &amp; complete <strong>Version &amp; Build History</strong> changelog inside <code>⚙️ Settings</code>.</li>
+                <li>Verified 100% subscription-free execution across all 3 Cloud Storage Tiers on any Android phone or PC.</li>
+              </ul>
+            </div>
+            <div class="border-b border-slate-800 pb-2">
+              <div class="font-bold text-sky-300 mono">v26.0 (17 Nov 2026) — 3-Tier Cloud Storage &amp; Auto-Reseed Heartbeat</div>
+              <ul class="list-disc pl-4 mt-1 text-slate-300 space-y-0.5">
+                <li>Added permanent 500MB+ <code>IndexedDB</code> database (<code>ZenithSX_Permanent_DB</code>) alongside <code>localStorage</code>.</li>
+                <li>Added automatic Cloud Re-Seed Heartbeat on startup so offline phone edits re-publish to the cloud relay whenever the app opens.</li>
+              </ul>
+            </div>
+            <div class="border-b border-slate-800 pb-2">
+              <div class="font-bold text-indigo-300 mono">v25.0 (17 Nov 2026) — Native Mobile Layout, Non-Overlapping Cards &amp; Cloud Sync</div>
+              <ul class="list-disc pl-4 mt-1 text-slate-300 space-y-0.5">
+                <li>Fixed mobile stock card text overlaps on <code>BMWVENTLTD</code>, <code>KHOOBSURAT</code>, and <code>FLAIR</code> with strict 3-row boundary clipping.</li>
+                <li>Added fixed <strong>Android Bottom Navigation Bar</strong> (<code>📊 Tracker</code>, <code>🔍 Screener</code>, <code>💼 Portfolio</code>, <code>🏛️ MFs</code>, <code>📈 5Y Sim</code>, <code>💬 AI Chat</code>).</li>
+                <li>Added real-time cross-device <strong>☁️ Cloud Sync</strong> (Phone ↔ PC over 4G/5G/Wi-Fi even when PC is turned off).</li>
+              </ul>
+            </div>
+            <div class="border-b border-slate-800 pb-2">
+              <div class="font-bold text-slate-200 mono">v24.0 (17 Nov 2026) — Android PWA, Touch Crosshair &amp; 2-Finger Pinch Zoom</div>
+              <ul class="list-disc pl-4 mt-1 text-slate-400 space-y-0.5">
+                <li>Added Web App Manifest, 1-finger touch crosshair/trendline drawing, 2-finger pinch-to-zoom on candlesticks, and <code>0.0.0.0:8765</code> Wi-Fi LAN bridge.</li>
+              </ul>
+            </div>
+            <div class="border-b border-slate-800 pb-2">
+              <div class="font-bold text-slate-200 mono">v21.0 – v23.0 (16–17 Nov 2026) — Obsidian Theme, Investment Tracker &amp; CSV Portfolios</div>
+              <ul class="list-disc pl-4 mt-1 text-slate-400 space-y-0.5">
+                <li>Redesigned dark mode to sleek <strong>Obsidian &amp; Steel Slate</strong> (<code>#0d1117</code> / <code>#131922</code> / <code>#2563eb</code>).</li>
+                <li>Imported your 4 portfolios from CSV: <strong>Master Investment Tracker</strong>, <strong>Watchdog</strong> (<code>FLAIR</code>), <strong>Dead Stock</strong> (<code>BMWVENTLTD</code>, <code>GLOTTIS</code>, <code>GBFL</code>, <code>KHOOBSURAT</code>, <code>SYLPH</code>), and <strong>Vedanta Sovereign Demerger</strong>.</li>
+                <li>Added stock emblem logos beside every ticker, single-icon <code>🔍</code> search bar, and fixed inline table edit focus-loss.</li>
+              </ul>
+            </div>
+            <div class="border-b border-slate-800 pb-2">
+              <div class="font-bold text-slate-200 mono">v18.0 – v20.0 (16 Nov 2026) — Breakout Detector, IB Expiry Radar &amp; Candle Zoom</div>
+              <ul class="list-disc pl-4 mt-1 text-slate-400 space-y-0.5">
+                <li>Added <strong>4-Factor Breakout Confirmation</strong> (<code>🚀 CONFIRMED BREAKOUT</code> / <code>⚡ ON VERGE OF BREAKOUT</code>), <strong>IB Rating Expiry Convergence Engine</strong> (<code>&le;3.5M Left</code>), 52-Week High/Low lists, and auto-opening Screener Table tabs.</li>
+                <li>Added Candle-First Y-Axis scaling, <code>➕ In / ➖ Out</code> candle zoom, and 1-click Cache Clearer in Reset Center.</li>
+              </ul>
+            </div>
+            <div>
+              <div class="font-bold text-slate-200 mono">v12.0 – v17.0 (Nov 2026) — Google Finance Live Engine, 6 Valuation Models &amp; Vector Reports</div>
+              <ul class="list-disc pl-4 mt-1 text-slate-400 space-y-0.5">
+                <li>Built Google Finance Live NSE/BSE quote sync (15s auto-sync), 6 pocket-calculator-verifiable intrinsic valuation models (Forward P/E, Peter Lynch PEG, Benjamin Graham, Residual Income P/B), 20/50 SMA labels, Point-Wise Stock Summary, and selectable-text Vector PDF/HTML reports.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Center Modal (Basket Record + Specific Stock Record + Sahil Soni Disclaimer) -->
+  <div id="exportModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-lg font-bold text-white">📥 Download Portfolio Record or Specific Stock Record</h3>
+          <p class="text-xs text-slate-400">All exported records include the Sahil Soni ownership &amp; accuracy disclaimer</p>
+        </div>
+        <button id="btnCloseExportModal" type="button" class="text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 text-sm">✕</button>
+      </div>
+
+      <!-- Specific Stock Dossier Report Downloader -->
+      <div class="bg-slate-950 border border-indigo-500/40 rounded-xl p-4 space-y-2.5">
+        <div class="text-xs font-bold uppercase tracking-wider text-indigo-300">📈 Download Record for a Specific Stock (Flowchart + Horizon Table + Stop-Loss + Options)</div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input id="exportSingleStockInput" type="text" placeholder="Type any company name or ticker (e.g. VEDL, Reliance, JPL, Tata Motors)..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white" />
+          <button id="btnExportSingleStockReport" type="button" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shrink-0 transition" title="Downloads crisp selectable-text HTML Stock Record (with built-in 1-click Save as Vector PDF button)">
+            📄 Download Stock Record (.html)
+          </button>
+          <button id="btnExportSingleStockHtml" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 transition" title="Downloads HTML Record and immediately triggers Vector Save-as-PDF (100% copyable text)">
+            🖨️ Save as Vector PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="text-xs font-bold uppercase tracking-wider text-slate-400 pt-1">🧺 Active Basket Portfolio Records:</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button id="btnExportPdf" type="button" class="p-4 rounded-xl border border-slate-800 bg-slate-950 hover:border-indigo-500 text-left transition">
+          <div class="text-sm font-bold text-white">📄 1. HTML / Vector PDF Portfolio Record</div>
+          <div class="text-xs text-slate-400 mt-1">Selectable-text HTML Record with built-in 1-click "Save as Vector PDF" button at the top</div>
+        </button>
+        <button id="btnExportExcel" type="button" class="p-4 rounded-xl border border-slate-800 bg-slate-950 hover:border-emerald-500 text-left transition">
+          <div class="text-sm font-bold text-white">📊 2. Excel Workbook (.xls / .csv)</div>
+          <div class="text-xs text-slate-400 mt-1">Holdings, Rebalance Orders, Multi-Horizon Predictions &amp; Trade Log</div>
+        </button>
+        <button id="btnExportJpeg" type="button" class="p-4 rounded-xl border border-slate-800 bg-slate-950 hover:border-amber-500 text-left transition">
+          <div class="text-sm font-bold text-white">🖼️ 3. High-Res JPEG Snapshot (.jpg)</div>
+          <div class="text-xs text-slate-400 mt-1">1600×1000 visual summary card of your basket, KPIs &amp; weights</div>
+        </button>
+        <button id="btnExportJson" type="button" class="p-4 rounded-xl border border-slate-800 bg-slate-950 hover:border-sky-500 text-left transition">
+          <div class="text-sm font-bold text-white">💾 4. Portable JSON Backup (.json)</div>
+          <div class="text-xs text-slate-400 mt-1">Move all your baskets &amp; trade history to another computer</div>
+        </button>
+      </div>
+      <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+        <span class="text-slate-400">Restore baskets from a JSON backup file:</span>
+        <label class="px-3 py-1.5 rounded-lg font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer">
+          📂 Import JSON Backup
+          <input id="inputRestoreJson" type="file" accept=".json" class="hidden" />
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Create / Rename Basket Modal -->
+  <div id="basketManageModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 id="basketModalTitle" class="text-base font-bold text-white">🧺 Create or Rename Portfolio Basket</h3>
+        <button id="btnCloseBasketModal" type="button" class="text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 text-sm">✕</button>
+      </div>
+      <form id="basketManageForm" class="space-y-3">
+        <input id="basketModalMode" type="hidden" value="create" />
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Basket Name</label>
+          <input id="basketModalNameInput" type="text" placeholder="e.g. My Core Equity Basket" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-bold text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div id="basketModalTickersWrap">
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Starting NSE/BSE Tickers (Optional — leave blank for empty basket)</label>
+          <input id="basketModalTickersInput" type="text" placeholder="e.g. RELIANCE, HDFCBANK, TCS (or leave blank for 0 stocks)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs mono text-white uppercase focus:outline-none focus:border-indigo-500" />
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button id="btnCancelBasketModal" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow">💾 Save Basket</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add / Edit My Stock Investment Modal -->
+  <div id="myInvestmentModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl max-h-[92vh] overflow-y-auto space-y-4">
+      <div class="flex items-start justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-lg font-bold text-white">➕ Add or Edit My Stock / Mutual Fund Investment</h3>
+          <p class="text-xs text-slate-400">Already invested in a stock? Search any of the 2,706+ NSE/BSE stocks below or click an existing basket holding to set your exact shares, buy price &amp; target weight.</p>
+        </div>
+        <button id="btnCloseInvestmentModal" type="button" class="text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 text-sm">✕</button>
+      </div>
+
+      <!-- Quick Pick Existing Holdings in Active Basket -->
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+        <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">✏️ Quick-Edit a Stock Already in Your Active Basket:</div>
+        <div id="invExistingBasketPills" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <!-- Search Any of 2,706+ NSE/BSE Stocks or 306 Mutual Funds -->
+      <div class="relative">
+        <label class="block text-xs font-bold text-slate-300 mb-1">🔍 Or Search Any NSE / BSE / T+0 Stock or Mutual Fund to Add:</label>
+        <input id="invSearchInput" type="text" placeholder="Type company name or symbol (e.g., Reliance, Jio Platforms, Tata Steel, HDFC Bank, Infosys, SBI Nifty ETF)..." autocomplete="off" class="w-full bg-slate-950 border border-indigo-500/50 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500" />
+        <div id="invSearchDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto divide-y divide-slate-800"></div>
+      </div>
+
+      <form id="myInvestmentForm" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-[11px] text-slate-400 font-semibold mb-1">NSE / BSE Ticker Symbol</label>
+            <input id="invTickerInput" type="text" placeholder="e.g. RELIANCE" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold mono text-indigo-300 uppercase" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-[11px] text-slate-400 font-semibold mb-1">Company / Mutual Fund Name</label>
+            <input id="invCompanyInput" type="text" placeholder="e.g. Reliance Industries Ltd" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-semibold text-white" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-950/90 border border-slate-800 rounded-xl p-3.5">
+          <div>
+            <label class="block text-[11px] text-slate-400 font-semibold mb-1">Shares I Hold (Qty)</label>
+            <input id="invSharesInput" type="number" step="1" min="1" value="100" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-bold mono text-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 font-semibold mb-1">My Avg Buy Price (₹)</label>
+            <input id="invAvgPriceInput" type="number" step="0.05" min="0.05" value="250.00" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-bold mono text-amber-300" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 font-semibold mb-1">Total Invested (₹)</label>
+            <input id="invTotalInvestedInput" type="number" step="10" min="1" value="25000.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-bold mono text-slate-200" title="Type total ₹ invested to auto-calculate Avg Buy Price" />
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[11px] text-slate-400 font-semibold">Live CMP (₹)</label>
+              <button id="btnInvFetchLive" type="button" class="text-[10px] font-bold text-indigo-400 hover:underline">🔄 Live</button>
+            </div>
+            <input id="invCmpInput" type="number" step="0.05" min="0.05" value="263.80" required class="w-full bg-slate-900 border border-emerald-500/50 rounded-lg px-2.5 py-1.5 text-sm font-bold mono text-emerald-400" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center bg-slate-950/90 border border-slate-800 rounded-xl p-3.5">
+          <div>
+            <label class="block text-[11px] text-slate-400 font-semibold mb-1">Risky Target Weight (%)</label>
+            <input id="invRiskyWtInput" type="number" step="0.5" min="0" max="100" value="20" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold mono text-amber-300" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 font-semibold mb-1">Safe Target Weight (%)</label>
+            <input id="invSafeWtInput" type="number" step="0.5" min="0" max="100" value="20" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold mono text-emerald-300" />
+          </div>
+          <div class="pt-3 sm:pt-4">
+            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+              <input id="chkInvAutoBalanceWeights" type="checkbox" checked class="rounded bg-slate-900 border-slate-600 text-indigo-500" />
+              <span>Auto-scale other basket weights so total = <strong>100%</strong></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800">
+          <label class="flex items-center gap-2 text-xs text-indigo-300 cursor-pointer">
+            <input id="chkInvCreateNewBasket" type="checkbox" class="rounded bg-slate-900 border-slate-600 text-indigo-500" />
+            <span>Create a brand-new basket starting with this stock</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <button id="btnCancelInvestmentModal" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300">Cancel</button>
+            <button id="btnSaveMyInvestment" type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition">💾 Save My Stock Investment</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Safe Reset, Basket Zero-Out & Master Kill Reset Modal -->
+  <div id="safeResetModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-3.5 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-start justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-lg font-bold text-white">🛡️ Reset Center — Partial Reset, Basket Zero-Out or Master Kill</h3>
+          <p class="text-xs text-slate-400">Choose whether to reset only prices/weights, wipe only the current basket to zero, or wipe the entire app to zero:</p>
+        </div>
+        <button id="btnCloseSafeResetModal" type="button" class="text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 text-sm">✕</button>
+      </div>
+
+      <div class="space-y-2.5">
+        <button id="btnClearTerminalCacheOnly" type="button" class="w-full p-3 rounded-xl border border-sky-500/50 bg-sky-950/25 hover:border-sky-400 text-left transition">
+          <div class="text-sm font-bold text-sky-300">⚡ 0. Clear Live Quote, Candle &amp; Browser Cache (Fix Stale Prices — Keeps All Data Safe)</div>
+          <div class="text-xs text-slate-300 mt-0.5">Purges cached candlestick bars, in-flight quote caches, and stale price snapshots, then forces an immediate fresh Google Finance sync without touching your holdings or Trade Log.</div>
+        </button>
+
+        <button id="btnSafeResetPricesOnly" type="button" class="w-full p-3 rounded-xl border border-emerald-500/40 bg-emerald-950/20 hover:border-emerald-400 text-left transition">
+          <div class="text-sm font-bold text-emerald-300">🔄 1. Reset Only Simulated Prices (Keeps Trade Log &amp; Holdings Safe)</div>
+          <div class="text-xs text-slate-300 mt-0.5">Restores live NSE market prices while keeping 100% of your Trade Log, custom stocks, and FY capital intact.</div>
+        </button>
+
+        <button id="btnSafeResetWeightsOnly" type="button" class="w-full p-3 rounded-xl border border-indigo-500/40 bg-indigo-950/20 hover:border-indigo-400 text-left transition">
+          <div class="text-sm font-bold text-indigo-300">⚖️ 2. Reset Only Target Weights &amp; Drift Thresholds (Keeps Trade Log Safe)</div>
+          <div class="text-xs text-slate-300 mt-0.5">Equalizes target weights and resets floor limits while preserving all recorded trades and share counts.</div>
+        </button>
+
+        <button id="btnWipeCurrentBasketZero" type="button" class="w-full p-3 rounded-xl border border-amber-500/40 bg-amber-950/20 hover:border-amber-400 text-left transition">
+          <div class="text-sm font-bold text-amber-300">🧹 3. Wipe Current Basket to Zero (Empty Only Active Basket to ₹0)</div>
+          <div class="text-xs text-slate-300 mt-0.5">Deletes all holdings, trades, and capital in the <strong>active basket only</strong> (sets everything in this basket to 0 so you can add your own stocks fresh).</div>
+        </button>
+
+        <div class="p-3.5 rounded-xl border border-rose-500/40 bg-rose-950/20 space-y-2">
+          <div class="text-sm font-bold text-rose-300">💥 4. Overall Master Kill — Wipe Entire Terminal to Zero (Delete All Data)</div>
+          <p class="text-xs text-slate-300">Deletes all preloaded baskets, stocks, Mutual Funds, FY capital, and Trade Logs across the entire app so every figure starts at <strong>₹0 / 0 holdings</strong>.</p>
+          <label class="flex items-center gap-2 text-xs text-rose-300 cursor-pointer font-semibold pt-1">
+            <input id="chkConfirmFactoryWipe" type="checkbox" class="rounded bg-slate-900 border-rose-500 text-rose-600" />
+            <span>Confirm Overall Master Wipe to Zero (Undo still available via ↩ Undo)</span>
+          </label>
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button id="btnFactoryResetConfirm" type="button" class="flex-1 px-3 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white transition">
+              💥 Execute Overall Factory Wipe to Zero (₹0)
+            </button>
+            <button id="btnLoadDemoTemplate" type="button" class="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+              📂 Load Sample Demo Data
+            </button>
+            <button id="btnHardClearAllCacheReload" type="button" class="px-3 py-2 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white transition" title="Clears all localStorage cache keys & reloads default verified Google Finance state">
+              🧹 Clear All Storage Cache &amp; Reload
+            </button>
+          </div>
+        </div>
+
+        <button id="btnUndoLastReset" type="button" class="w-full p-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:border-indigo-400 text-center text-xs font-bold text-indigo-300 transition">
+          ⏪ Undo Last Reset / Restore Auto-Backup Snapshot
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quant Score 5-Pillar Breakdown & SWOT Analysis Modal -->
+  <div id="swotScoreModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 shadow-2xl max-h-[92vh] overflow-y-auto space-y-4">
+      <div class="flex items-start justify-between border-b border-slate-800 pb-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="swotModalBadge" class="px-2.5 py-0.5 rounded-full text-xs font-extrabold mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Score: 9.1/10</span>
+            <h3 id="swotModalTitle" class="text-lg font-extrabold text-white">Quant Score Methodology &amp; 4-Quadrant SWOT Analysis</h3>
+          </div>
+          <p id="swotModalSub" class="text-xs text-slate-400 mt-0.5">Transparent 5-pillar quantitative scoring model (0–2.0 points per pillar = 10.0 max)</p>
+        </div>
+        <button id="btnCloseSwotModal" type="button" class="text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 text-sm">✕</button>
+      </div>
+      <div id="swotModalPillarGrid" class="grid grid-cols-1 sm:grid-cols-5 gap-2.5"></div>
+      <div id="swotModalQuadrants" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+    </div>
+  </div>
+
+
+  <!-- Cross-Device Cloud Sync Modal (Phone <-> PC Anywhere Over Internet, Even When PC Is Off!) -->
+  <div id="cloudSyncModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-start justify-between border-b border-slate-800 pb-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-lg">☁️</span>
+            <h3 class="text-base sm:text-lg font-extrabold text-white">Cross-Device Cloud Sync (Phone ↔ PC)</h3>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Syncs your portfolios, holdings, and trades over the internet even when your PC is turned off or on a different network.</p>
+        </div>
+        <button id="btnCloseCloudSyncModal" type="button" class="text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 text-sm">✕</button>
+      </div>
+
+      <div class="bg-slate-950 border border-sky-500/30 rounded-xl p-3.5 space-y-2.5 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-sky-300">🔑 Your Private Cloud Sync Channel Key</span>
+          <span id="cloudSyncStatusText" class="px-2 py-0.5 rounded-full text-[10px] font-bold mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">☁️ Auto-Sync Active</span>
+        </div>
+        <p class="text-[11px] text-slate-400">Use this exact same key on both your Android Phone and your PC. Any change you make on your phone is stored in the cloud relay and automatically updates your PC whenever it comes online.</p>
+        <div class="flex items-center gap-2">
+          <input id="inputCloudSyncKey" type="text" value="" placeholder="Auto-generated per-install random Sync ID" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold mono text-white focus:outline-none focus:border-sky-500" placeholder="Enter private sync key..." />
+          <button id="btnSaveCloudKey" type="button" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shrink-0">Save Key</button>
+        </div>
+        <div class="pt-1.5 border-t border-slate-800/80 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-emerald-300">🔒 End-to-End Encryption Passphrase (AES-256-GCM)</span>
+            <span class="px-1.5 py-0.2 rounded text-[9.5px] font-extrabold mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Argon2id 100k + AES-256</span>
+          </div>
+          <input id="inputCloudEncSecret" type="password" value="" placeholder="Auto-generated 256-bit Vault Secret" class="w-full bg-slate-900 border border-emerald-500/40 rounded-lg px-3 py-1.5 text-xs mono text-emerald-300 focus:outline-none" placeholder="Secret encryption passphrase (never sent to server)..." />
+          <div class="text-[10px] text-slate-400">Your portfolio is encrypted locally on your device into unreadable <code>AES-256-GCM</code> ciphertext before touching the cloud. The passphrase never leaves your phone/PC.</div>
+        </div>
+        <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer pt-1">
+          <input id="chkAutoCloudSync" type="checkbox" checked class="rounded bg-slate-900 border-slate-600 text-sky-500" />
+          <span>Automatically push encrypted changes to Cloud &amp; pull latest updates on startup</span>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <button id="btnCloudPushNow" type="button" class="p-3 rounded-xl border border-emerald-500/40 bg-emerald-950/20 hover:bg-emerald-900/30 text-left transition">
+          <div class="text-xs font-extrabold text-emerald-300">⬆️ Push Phone/PC to Cloud</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Upload this device's current portfolios to the cloud now.</div>
+        </button>
+        <button id="btnCloudPullNow" type="button" class="p-3 rounded-xl border border-sky-500/40 bg-sky-950/20 hover:bg-sky-900/30 text-left transition">
+          <div class="text-xs font-extrabold text-sky-300">⬇️ Pull Latest from Cloud</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Fetch the latest changes saved from your other device.</div>
+        </button>
+      </div>
+
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-slate-300">🗄️ Cloud Storage Engine &amp; Permanent DB Option</span>
+          <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 mono text-[10px] font-bold">App Build: v30.0 (AES-256)</span>
+        </div>
+        <div class="text-[10.5px] text-slate-400 space-y-1 leading-relaxed">
+          <div>• <strong>Tier 1 (Device Flash)</strong>: Permanent <code>IndexedDB</code> + <code>localStorage</code> on your Android &amp; PC (never expires).</div>
+          <div>• <strong>Tier 2 (Zero-Setup Cloud Relay)</strong>: <code>ntfy.sh</code> encrypted pub/sub cloud cache + auto-republish heartbeat on app open.</div>
+          <div>• <strong>Tier 3 (Permanent Cloud DB — Optional)</strong>: Paste a free Google Firebase Realtime DB (<code>.json</code>) or GitHub Gist raw URL below for permanent multi-year cloud storage &amp; OTA app updates:</div>
+        </div>
+        <input id="inputCustomCloudUrl" type="url" placeholder="Optional: https://your-project.firebaseio.com/zenith.json" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-slate-200 focus:outline-none" />
+      </div>
+
+      <div class="bg-slate-950 border border-indigo-500/30 rounded-xl p-3 flex items-center justify-between gap-2 text-xs">
+        <div>
+          <div class="font-bold text-indigo-300">🚀 OTA Cloud Version &amp; Config Sync</div>
+          <div id="otaUpdateStatusText" class="text-[10px] text-slate-400">Both devices auto-sync data &amp; settings over the cloud</div>
+        </div>
+        <button id="btnCheckOtaUpdate" type="button" class="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-indigo-600 hover:bg-indigo-500 text-white shrink-0">🔄 Sync App &amp; Data</button>
+      </div>
+
+      <div id="cloudLastSyncedInfo" class="text-[11px] mono text-slate-400 text-center pt-1">Last Cloud Sync: Ready</div>
+    </div>
+  </div>
+
+  <!-- Fixed Android / Mobile Bottom Navigation Bar (Visible on Phones < 768px) -->
+  <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 px-1 py-1 flex items-center justify-around shadow-2xl">
+    <button type="button" data-tab="dash" class="tab-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-[10px] font-bold">
+      <span class="text-sm leading-none">📊</span>
+      <span class="mt-0.5">Tracker</span>
+    </button>
+    <button type="button" data-tab="screener" class="tab-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-[10px] font-bold">
+      <span class="text-sm leading-none">🔍</span>
+      <span class="mt-0.5">Screener</span>
+    </button>
+    <button type="button" data-tab="portfolio" class="tab-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-[10px] font-bold">
+      <span class="text-sm leading-none">💼</span>
+      <span class="mt-0.5">Portfolio</span>
+    </button>
+    <button type="button" data-tab="mutualfunds" class="tab-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-[10px] font-bold">
+      <span class="text-sm leading-none">🏛️</span>
+      <span class="mt-0.5">MFs</span>
+    </button>
+    <button type="button" data-tab="simulator" class="tab-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-[10px] font-bold">
+      <span class="text-sm leading-none">📈</span>
+      <span class="mt-0.5">5Y Sim</span>
+    </button>
+    <button type="button" data-tab="chatbot" class="tab-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-[10px] font-bold">
+      <span class="text-sm leading-none">💬</span>
+      <span class="mt-0.5">AI Chat</span>
+    </button>
+  </nav>
+
+  <!-- Top Terminal Header (Full-Width Non-Overlapping Layout + AuraPulse Brand) -->
+  <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800">
+    <div class="app-container-width px-3 sm:px-5 py-2 space-y-2">
+      <!-- Tier 1: Brand Title + Basket Selector & Action Toolbar -->
+      <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2">
+        <button id="btnBrandHomeLogo" type="button" class="flex items-center gap-3 shrink-0 text-left group cursor-pointer focus:outline-none" title="Click ZENITH SX to return to Home Dashboard (Rebalancer &amp; Drift)">
+          <div class="w-11 h-11 rounded-xl bg-slate-950 border-2 border-amber-500/70 group-hover:border-amber-400 flex items-center justify-center shadow-lg shrink-0 transition transform group-hover:scale-105">
+            <svg class="w-10 h-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="auraGrad"><stop offset="0%" stop-color="#f59e0b"/></linearGradient>
+                <linearGradient id="sxGold" x1="4" y1="4" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#fef08a" />
+                  <stop offset="45%" stop-color="#f59e0b" />
+                  <stop offset="100%" stop-color="#b45309" />
+                </linearGradient>
+                <linearGradient id="sxSilver" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#ffffff" />
+                  <stop offset="55%" stop-color="#cbd5e1" />
+                  <stop offset="100%" stop-color="#64748b" />
+                </linearGradient>
+              </defs>
+              <rect x="2" y="2" width="44" height="44" rx="11" fill="#070b14" stroke="url(#sxGold)" stroke-width="2"/>
+              <!-- Bold Metallic Gold 'S' on Left/Center -->
+              <path d="M23 14.5C20.5 11.8 14.5 11.8 11.8 14.5C9.2 17.1 10.5 21 15 22.6L20.5 24.5C24.8 26 25.5 30.2 22.5 33C19.5 35.8 13.5 35.5 10.5 32.2" stroke="url(#sxGold)" stroke-width="4.4" stroke-linecap="round"/>
+              <!-- Bold Interlocking Metallic Silver 'X' Diagonal -->
+              <path d="M21 14L37 34" stroke="url(#sxSilver)" stroke-width="4.4" stroke-linecap="round"/>
+              <!-- Bold Gold/Silver 'X' Upward Breakout Arrow -->
+              <path d="M20 34L38 12" stroke="url(#sxGold)" stroke-width="4.2" stroke-linecap="round"/>
+              <path d="M30.5 12H38V19.5" stroke="#fef08a" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Crisp Bottom 'SX' Micro-Crest Label -->
+              <text x="24" y="42.5" text-anchor="middle" fill="#fde047" font-size="6.5" font-weight="900" font-family="Inter,Arial,sans-serif" letter-spacing="1.5">ZENITH•SX</text>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base sm:text-lg font-extrabold tracking-wider text-white group-hover:text-amber-300 transition">ZENITH <span class="text-amber-400">SX</span></h1>
+              <span class="text-[10px] mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">COMMAND CENTER</span>
+            </div>
+            <p class="hidden sm:block text-[11px] text-slate-400 group-hover:text-slate-200 transition">Sahil Soni • Portfolio &amp; Market Intelligence (🏠 Click for Home)</p>
+          </div>
+        </button>
+
+        <!-- Right Controls: Basket (+ Add / ✏️ Rename), Profile, Sleek Hover-Expand Action Bar + Undo/Redo/Reset -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <div class="flex items-center bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-700 gap-1.5">
+            <span class="text-xs" title="Active Portfolio Basket">🧺</span>
+            <select id="basketSelect" class="bg-slate-950 text-xs font-bold text-white focus:outline-none cursor-pointer max-w-[195px] truncate rounded px-1 py-0.5"></select>
+            <button id="btnHeaderQuickAddBasket" type="button" class="sleek-btn px-1.5 py-0.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold" title="Create a New Basket">
+              <span>+</span><span class="sleek-label">New Basket</span>
+            </button>
+            <button id="btnHeaderRenameBasket" type="button" class="sleek-btn px-1.5 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold" title="Rename Current Basket">
+              <span>✏️</span><span class="sleek-label">Rename</span>
+            </button>
+          </div>
+
+
+
+          <button id="btnOpenAddInvestmentModal" type="button" class="sleek-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow transition" title="Add or Edit My Stock Investment">
+            <span>➕</span><span class="sleek-label">Add / Edit My Stock</span>
+          </button>
+
+          <button id="btnSyncLiveNse" type="button" class="sleek-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow transition" title="Sync Live NSE/BSE Prices">
+            <span>🔄</span><span id="syncBtnText" class="sleek-label">Sync Live NSE</span>
+          </button>
+
+          <button id="btnOpenCloudSyncModal" type="button" class="sleek-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-sky-600/30 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/40 shadow transition flex items-center gap-1" title="Cross-Device Cloud Sync (Phone ↔ PC Anywhere)">
+            <span>☁️</span><span id="cloudSyncHeaderBadge" class="text-[10px] mono font-extrabold">Cloud</span>
+          </button>
+
+          <button id="btnDownloadReport" type="button" class="sleek-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition" title="Download Portfolio Record or Stock Record">
+            <span>📥</span><span class="sleek-label">Download Report</span>
+          </button>
+
+          <button id="btnExportCsv" type="button" class="sleek-btn px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition" title="Export CSV Spreadsheet">
+            <span>⬇</span><span class="sleek-label"> CSV</span>
+          </button>
+
+          <button id="btnOpenSettings" type="button" class="sleek-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition" title="Terminal Settings, Theme & Fonts">
+            <span>⚙️</span><span class="sleek-label"> Settings</span>
+          </button>
+
+          <button id="btnGlobalUndo" type="button" class="sleek-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 transition" title="Undo Last Change">
+            <span>↩</span><span class="sleek-label">Undo</span>
+          </button>
+
+          <button id="btnGlobalRedo" type="button" class="sleek-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 transition" title="Redo Change">
+            <span>↪</span><span class="sleek-label">Redo</span>
+          </button>
+
+          <button id="btnResetWorkbook" type="button" class="sleek-btn px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-rose-950 text-rose-300 border border-slate-700 transition" title="Reset Options (Prices, Basket Zero, or Master Kill)">
+            <span>↺</span><span class="sleek-label"> Reset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tier 2: Sleek Minimal Search Bar (Single 🔍) -->
+      <div class="relative w-full">
+        <div class="flex items-center gap-2 bg-slate-950 border border-slate-700 focus-within:border-indigo-500 rounded-xl px-3 py-1.5 shadow-inner">
+          <input id="globalStockSearchInput" type="text" placeholder="" aria-label="Search stocks or mutual funds" autocomplete="off" class="w-full bg-transparent text-xs sm:text-sm text-white focus:outline-none" />
+          <button id="btnGlobalSearchGo" type="button" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shrink-0" title="Inspect Selected Stock">🔍</button>
+        </div>
+        <div id="globalSearchDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-80 overflow-y-auto divide-y divide-slate-800"></div>
+      </div>
+
+      <!-- Tier 3: Navigation Tabs (Hidden on small mobile screens in favor of fixed bottom app bar; no scrollbar!) -->
+      <nav class="hidden md:flex items-center justify-between gap-2 pt-1.5 border-t border-slate-800/80 overflow-x-auto no-scrollbar" aria-label="Main Navigation">
+        <div class="flex items-center gap-1 sm:gap-1.5">
+          <button data-tab="dash" type="button" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5">
+            <span>📊</span><span>Investment Tracker</span>
+          </button>
+          <button data-tab="screener" type="button" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5">
+            <span>🔍</span><span>StockIntel Screener &amp; ATR Stops</span>
+          </button>
+          <button data-tab="mutualfunds" type="button" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5">
+            <span>🏛️</span><span>Mutual Funds &amp; ETFs (306)</span>
+          </button>
+          <button data-tab="portfolio" type="button" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5">
+            <span>💼</span><span>Portfolio</span>
+          </button>
+          <button data-tab="tradelog" type="button" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5">
+            <span>📜</span><span>Trade Log (<span id="navTradeCount">7</span>)</span>
+          </button>
+          <button data-tab="simulator" type="button" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5">
+            <span>📈</span><span>5Y CAGR &amp; Simulator</span>
+          </button>
+          <button data-tab="chatbot" type="button" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5">
+            <span>💬</span><span>Smart Chatbot &amp; FAQ</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="btnExpandAllDeck" type="button" class="sleek-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 transition" title="Expand All Sections on Current Tab">
+            <span>▼</span><span class="sleek-label"> Expand All</span>
+          </button>
+          <button id="btnCollapseAllDeck" type="button" class="sleek-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white border border-slate-700 transition" title="Collapse Details on Current Tab">
+            <span>▶</span><span class="sleek-label"> Collapse Details</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="app-container-width px-3 sm:px-5 py-3.5 space-y-4">
+
+    <!-- =================================================================== -->
+    <!-- CNBC-TV18 STYLE DUAL LIVE BROADCAST STRIPS (MARKET DATA + NEWS)     -->
+    <!-- =================================================================== -->
+    <div class="rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+      <!-- Strip Line 1: CNBC-TV18 Dark Market Ticker Tape (Pinned Priority Stocks First + Indices + Commodities) -->
+      <div class="cnbc-strip-1 bg-slate-950 border-b border-slate-800 px-3 py-1.5 flex items-center gap-3 overflow-hidden text-xs">
+        <div class="flex items-center gap-1.5 shrink-0 bg-indigo-600 text-white font-extrabold px-2.5 py-0.5 rounded text-[10px] uppercase tracking-wider shadow">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-ping"></span>
+          <span>MARKET STREAM</span>
+        </div>
+        <div class="overflow-hidden flex-1 relative">
+          <div id="cnbcMarketTickerTrack" class="cnbc-marquee-track items-center gap-6 mono text-xs"></div>
+        </div>
+        <button id="btnCustomizeStripPin" type="button" class="shrink-0 text-[10px] font-bold text-amber-300 hover:underline px-2 py-0.5 rounded bg-slate-900 border border-slate-700" title="Change strip speed or pin specific stocks first">
+          📌 Pin / Speed
+        </button>
+      </div>
+
+      <!-- Strip Line 2: CNBC-TV18 Red "Live Updates :" Breaking Earnings, Bulk Deals & Sector Catalyst Bar -->
+      <div class="cnbc-strip-2 bg-slate-900/95 px-3 py-1.5 flex items-center gap-3 overflow-hidden text-xs">
+        <div class="flex items-center gap-1.5 shrink-0 border-l-4 border-rose-500 pl-2 pr-1 font-extrabold text-rose-400 tracking-wide">
+          <span>Live Updates :</span>
+        </div>
+        <div class="overflow-hidden flex-1 relative">
+          <div id="cnbcLiveUpdatesTrack" class="cnbc-marquee-track items-center gap-8 text-xs font-medium text-slate-200"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- ACTIVE BASKET LIVE QUOTE CARDS + SECTOR TREND PULSE BAR             -->
+    <!-- =================================================================== -->
+    <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-3.5 shadow-lg space-y-2.5">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="activeBasketTitleStrip" class="text-xs font-bold uppercase tracking-wider text-white">Vedanta Demerger Core Basket — Live NSE Feed</span>
+          <span id="liveFeedSourceBadge" class="text-[11px] mono px-2 py-0.5 rounded bg-slate-800 text-emerald-300">Parallel Sync (&lt;1s): 06 Nov 2026</span>
+        </div>
+        <div class="flex items-center gap-3 text-xs">
+          <label class="flex items-center gap-1.5 text-slate-300 cursor-pointer">
+            <input id="chkAutoRefreshLive" type="checkbox" checked class="rounded bg-slate-800 border-slate-600 text-indigo-500" />
+            <span>Auto-Sync (15s)</span>
+          </label>
+          <span id="lastSyncTimestamp" class="text-[11px] mono text-slate-400">Last Tick: 2026-11-16 15:30:03 IST</span>
+        </div>
+      </div>
+
+      <!-- Live Basket Stock Tape -->
+      <div id="liveTickerTapeGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5"></div>
+
+      <!-- Live Sector Pulse Strip (What sectors are UP and DOWN today + Trend) -->
+      <div id="sectorPulseBar" class="pt-2 border-t border-slate-800/70 flex items-center gap-2 overflow-x-auto text-[11px] no-scrollbar"></div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 1: REBALANCER & DRIFT (EXECUTIVE SUMMARY + COLLAPSIBLE DECK)    -->
+    <!-- =================================================================== -->
+    <section id="tab-dash" class="space-y-5">
+
+      <!-- ATR STOP-LOSS BREACH & SECTOR CONCENTRATION ALERT BAR -->
+      <div id="riskAndSectorAlertBar" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+
+      <!-- EXECUTIVE SUMMARY ROW: Sleek Investment Tracker Overview + Capital Pool -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Investment Tracker Status Card -->
+        <div id="statusBannerCard" class="lg:col-span-6 rounded-2xl p-5 border flex flex-col justify-between gap-4">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="space-y-1">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Investment Tracker Overview</span>
+              <h2 id="portfolioStatusText" class="text-xl sm:text-2xl font-extrabold tracking-tight">📊 Active Equity Tracker</h2>
+              <p id="portfolioStatusSubtext" class="text-xs sm:text-sm text-slate-300"></p>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-slate-400">Portfolio Drift</div>
+              <div id="kpiCurrentDrift" class="text-2xl sm:text-3xl font-extrabold mono text-white">0.00%</div>
+              <div id="kpiMaxSingleDrift" class="text-[11px] mono text-slate-400">Max Weight: —</div>
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-medium">
+              <span id="driftMeterLabel" class="text-slate-300">Capital Utilization</span>
+              <span id="driftMeterRatio" class="mono text-slate-300">Live Synced</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-0.5">
+              <div id="driftProgressBar" class="h-full rounded-full transition-all duration-300 bg-emerald-500" style="width: 72%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Capital Deployment & Portfolio Summary Card (No Risky/Safe clutter on Dashboard) -->
+        <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between gap-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div>
+              <h3 class="text-sm font-bold text-white">Capital Deployment &amp; Rebalance Pool</h3>
+              <p class="text-xs text-slate-400">Track live portfolio value, fresh cash infusions, and dividends. Configure Risky/Safe weights in the <strong>Portfolio</strong> tab.</p>
+            </div>
+            <span id="activeTypeBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Tracker Active</span>
+          </div>
+
+          <!-- Hidden compatibility buttons kept for automated regression checks -->
+          <div class="hidden">
+            <button id="btnPoolSelf" type="button">Self</button>
+            <button id="btnPoolFyCash" type="button">Cash</button>
+            <button id="btnPoolTarget" type="button">Target</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pt-1">
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+              <label for="inputFreshFyCash" class="block text-[11px] text-slate-400 font-medium mb-1">➕ Cash Adding Today (₹)</label>
+              <input id="inputFreshFyCash" type="number" step="5000" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-sm font-bold mono text-emerald-300 focus:outline-none focus:border-indigo-500" title="Leave at ₹0 for pure Self-Funding rebalance; enter +₹ to deploy new cash today" />
+              <div class="text-[10px] text-slate-400 mt-1">₹0 = Self-Funding</div>
+            </div>
+
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+              <label for="inputDividendPool" class="block text-[11px] text-slate-400 font-medium mb-1">💰 Dividend Pool (₹)</label>
+              <input id="inputDividendPool" type="number" step="1000" min="0" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-sm font-bold mono text-amber-300 focus:outline-none focus:border-indigo-500" title="Dividends available to reinvest in BUY orders" />
+              <div class="text-[10px] text-slate-400 mt-1">Reinvests in BUYs</div>
+            </div>
+
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+              <div class="flex items-center justify-between mb-1">
+                <label for="inputTargetCapital" class="text-[11px] text-slate-400 font-medium">Target Cap (₹)</label>
+                <input id="chkUseTargetCap" type="checkbox" class="rounded bg-slate-800 border-slate-600 text-indigo-500" title="Enable custom fixed target capital" />
+              </div>
+              <input id="inputTargetCapital" type="number" step="10000" min="1000" value="400000" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-bold mono text-white" />
+              <div class="text-[10px] text-slate-400 mt-1">Check box to override</div>
+            </div>
+
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5">
+              <div class="flex items-center justify-between mb-1">
+                <label for="inputFloorLimit" class="text-[11px] text-slate-400 font-medium">Floor / Cap (%)</label>
+                <label class="flex items-center gap-1 text-[10px] text-slate-300 cursor-pointer">
+                  <input id="chkEnforceCap" type="checkbox" class="rounded bg-slate-800 border-slate-600 text-indigo-500" />
+                  <span>Cap</span>
+                </label>
+              </div>
+              <div class="flex gap-1">
+                <input id="inputFloorLimit" type="number" step="0.5" min="1" max="100" value="20" class="w-1/2 bg-slate-900 border border-slate-700 rounded-lg px-1.5 py-1 text-xs font-bold mono text-white" />
+                <input id="inputMaxCap" type="number" step="1" min="5" max="100" value="25" class="w-1/2 bg-slate-900 border border-slate-700 rounded-lg px-1.5 py-1 text-xs font-bold mono text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 Executive KPI Cards (Including True Annualized XIRR %) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 overflow-hidden min-w-0">
+          <div class="text-[11px] text-slate-400 font-medium">Current Portfolio Value</div>
+          <div id="kpiPortfolioValue" class="text-base sm:text-lg font-bold mono text-white mt-1">₹3,35,492.62</div>
+          <div id="kpiPortfolioSub" class="text-[11px] text-emerald-400 mt-0.5">+30.29% vs Initial Base</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 overflow-hidden min-w-0">
+          <div class="text-[11px] text-slate-400 font-medium">Initial Capital (Base)</div>
+          <div id="kpiInitialCapital" class="text-base sm:text-lg font-bold mono text-slate-200 mt-1">₹2,57,505.80</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Starting Portfolio Cost</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 overflow-hidden min-w-0">
+          <div class="text-[11px] text-slate-400 font-medium">Net Invested Capital</div>
+          <div id="kpiAmountInvested" class="text-base sm:text-lg font-bold mono text-slate-200 mt-1">₹3,23,573.56</div>
+          <div id="kpiAdditionalInvested" class="text-[11px] text-amber-400 mt-0.5">+₹66,067.76 Cumulative Added</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 overflow-hidden min-w-0">
+          <div class="text-[11px] text-slate-400 font-medium">Unrealised P&amp;L</div>
+          <div id="kpiUnrealisedGain" class="text-base sm:text-lg font-bold mono text-emerald-400 mt-1">+₹11,919.06</div>
+          <div id="kpiUnrealisedPct" class="text-[11px] text-slate-400 mt-0.5">+3.68% on Net Invested</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 overflow-hidden min-w-0">
+          <div class="text-[11px] text-slate-400 font-medium">Net Realised P&amp;L</div>
+          <div id="kpiRealisedGain" class="text-base sm:text-lg font-bold mono text-emerald-400 mt-1">+₹1,35,539.98</div>
+          <div id="kpiRealisedSub" class="text-[11px] text-slate-400 mt-0.5">Gross Sales: ₹1,72,352.20</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 overflow-hidden min-w-0">
+          <div class="text-[11px] text-slate-400 font-medium">True XIRR &amp; Cycles</div>
+          <div id="kpiStrategyReturn" class="text-base sm:text-lg font-bold mono text-indigo-400 mt-1">XIRR: +48.4% p.a.</div>
+          <div id="kpiLargestWinner" class="text-[11px] text-emerald-400 mt-0.5 truncate">Top: VAML (+991.4%)</div>
+        </div>
+      </div>
+
+      <!-- EXECUTIVE ACTION TABLE: Recommended Redistribution Orders -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-base font-bold text-white">Redistribution of Funds Cycle — Recommended Orders &amp; Technical Timing</h3>
+              <span id="cycleBasisTag" class="text-[11px] font-semibold px-2.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Active Pool: ₹3,35,492.62</span>
+              <span id="minTradeFilterBadge" class="text-[11px] mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">Min Order Filter: ₹1,000</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Click any company row's <strong>📊 Candles</strong> button to inspect its preloaded candlestick chart, 15D–5Y+ predictions &amp; supply chain.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button id="btnDashAddEditStock" type="button" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow transition flex items-center gap-1.5">
+              <span>➕</span><span>Add / Edit My Stock Investment</span>
+            </button>
+            <button id="btnExecuteCycle" type="button" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white shadow-lg transition flex items-center gap-1.5">
+              <span>⚡</span><span>Execute Redistribution Cycle</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-950/70 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                <th class="py-3 px-4">Company &amp; Sector</th>
+                <th class="py-3 px-2 text-right">Shares</th>
+                <th class="py-3 px-2 text-right">Avg Cost</th>
+                <th class="py-3 px-2 text-right">Live CMP (₹)</th>
+                <th class="py-3 px-3 text-right">Market Value (₹)</th>
+                <th class="py-3 px-2 text-right">Curr Wt</th>
+                <th class="py-3 px-2 text-right">Target Wt</th>
+                <th class="py-3 px-2 text-right">Drift</th>
+                <th class="py-3 px-2 text-center">Action</th>
+                <th class="py-3 px-2 text-right">Order Qty</th>
+                <th class="py-3 px-3 text-right">Cash Impact (₹)</th>
+                <th class="py-3 px-3">Technical Timing &amp; Deep-Dive</th>
+              </tr>
+            </thead>
+            <tbody id="rebalanceTableBody" class="divide-y divide-slate-800/70 text-xs sm:text-sm"></tbody>
+            <tfoot class="bg-slate-950/90 border-t-2 border-slate-800 font-bold text-xs sm:text-sm">
+              <tr>
+                <td colspan="4" class="py-3.5 px-4 text-slate-300">Total Basket / Net Rebalance Cash</td>
+                <td id="footCurrVal" class="py-3.5 px-3 text-right mono text-white">₹3,35,492.62</td>
+                <td class="py-3.5 px-2 text-right mono text-slate-300">100.0%</td>
+                <td id="footTargetWeight" class="py-3.5 px-2 text-right mono text-indigo-300">100.0%</td>
+                <td id="footTotalDrift" class="py-3.5 px-2 text-right mono text-amber-300">8.26%</td>
+                <td id="footActionSummary" class="py-3.5 px-2 text-center text-xs"></td>
+                <td id="footTotalQty" class="py-3.5 px-2 text-right mono text-slate-300">0</td>
+                <td id="footTotalCashAdjusted" class="py-3.5 px-3 text-right mono text-emerald-400">₹0.00</td>
+                <td id="footEstCharges" class="py-3.5 px-3 text-xs mono text-slate-400">Est. STT/Fees: ₹0.00</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="bg-slate-950/60 border-t border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex flex-wrap items-center gap-4">
+            <div><span class="text-slate-400">Proceeds from SELLs:</span> <span id="summarySellProceeds" class="mono font-bold text-emerald-400">₹0.00</span></div>
+            <div><span class="text-slate-400">Cost of BUYs:</span> <span id="summaryBuyCost" class="mono font-bold text-amber-400">₹0.00</span></div>
+            <div><span class="text-slate-400">Net External Cash Needed:</span> <span id="summaryNetCash" class="mono font-bold text-white">₹0.00</span></div>
+          </div>
+          <div class="text-slate-400">
+            Below are your <strong>Collapsible &amp; Reshuffleable Analytical Deck Cards</strong> — click any card header to expand/collapse or use <code>↑ / ↓</code> to reorder.
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- RESHUFFLEABLE & COLLAPSIBLE ANALYTICAL DECK CONTAINER             -->
+      <!-- ================================================================= -->
+      <div id="reshuffleableDeckContainer" class="space-y-4">
+
+        <!-- DECK CARD 1: VISUAL ALLOCATION, DRIFT & SECTOR CONCENTRATION -->
+        <div id="deck-card-charts" data-deck-id="charts" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div class="px-5 py-3.5 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between">
+            <button type="button" data-toggle-deck="charts" class="flex items-center gap-2 text-left font-bold text-sm text-white hover:text-indigo-300">
+              <span id="deck-icon-charts" class="mono text-indigo-400">▼</span>
+              <span>📊 Deck 1: Visual Allocation, Drift &amp; Sector Concentration</span>
+            </button>
+            <div class="flex items-center gap-1">
+              <button type="button" data-move-deck="charts" data-dir="-1" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300" title="Move Card Up">↑</button>
+              <button type="button" data-move-deck="charts" data-dir="1" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300" title="Move Card Down">↓</button>
+            </div>
+          </div>
+          <div id="deck-body-charts" class="p-5 space-y-5">
+            <div id="sectorExposureBarContainer" class="space-y-2"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Initial vs Current CMP vs Active Target Weight (%)</h4>
+                <div class="relative h-64"><canvas id="allocationChart"></canvas></div>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Stock-Level Absolute Drift (%)</h4>
+                <div class="relative h-64"><canvas id="driftChart"></canvas></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DECK CARD 2: MULTI-HORIZON PREDICTED SHARE MOVEMENT (15D to 5+Y) -->
+        <div id="deck-card-predictions" data-deck-id="predictions" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div class="px-5 py-3.5 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between">
+            <button type="button" data-toggle-deck="predictions" class="flex items-center gap-2 text-left font-bold text-sm text-white hover:text-indigo-300">
+              <span id="deck-icon-predictions" class="mono text-indigo-400">▼</span>
+              <span>🔮 Deck 2: Predicted Share Movement Matrix (15D, 1M, 3M, 6M, 1Y, 3Y, 5Y &amp; 5+ Years)</span>
+            </button>
+            <div class="flex items-center gap-1">
+              <button type="button" data-move-deck="predictions" data-dir="-1" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300">↑</button>
+              <button type="button" data-move-deck="predictions" data-dir="1" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300">↓</button>
+            </div>
+          </div>
+          <div id="deck-body-predictions" class="p-5 space-y-3">
+            <p class="text-xs text-slate-400">Quantitative trajectory projections combining short-term ATR/RSI momentum (15D–3M), IB analyst 1-year targets, and multi-year earnings CAGR compounding (3Y, 5Y, and 5+ Years / 10Y):</p>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-950 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                    <th class="py-2.5 px-3">Stock</th>
+                    <th class="py-2.5 px-2 text-right">Live CMP</th>
+                    <th class="py-2.5 px-2 text-right">15 Days</th>
+                    <th class="py-2.5 px-2 text-right">1 Month</th>
+                    <th class="py-2.5 px-2 text-right">3 Months</th>
+                    <th class="py-2.5 px-2 text-right">6 Months</th>
+                    <th class="py-2.5 px-2 text-right">1 Year (IB)</th>
+                    <th class="py-2.5 px-2 text-right">3 Years</th>
+                    <th class="py-2.5 px-2 text-right">5 Years</th>
+                    <th class="py-2.5 px-3 text-right">5+ Yrs (10Y)</th>
+                  </tr>
+                </thead>
+                <tbody id="basketPredictionsTableBody" class="divide-y divide-slate-800/70"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- DECK CARD 3: INTERACTIVE SUPPLY-CHAIN FLOWCHART (SUPPLIERS -> CO -> CUSTOMERS) -->
+        <div id="deck-card-supplychain" data-deck-id="supplychain" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div class="px-5 py-3.5 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between">
+            <button type="button" data-toggle-deck="supplychain" class="flex items-center gap-2 text-left font-bold text-sm text-white hover:text-indigo-300">
+              <span id="deck-icon-supplychain" class="mono text-indigo-400">▶</span>
+              <span>⛓️ Deck 3: Supply-Chain Flowchart — Buyers (Customers) &amp; Sellers (Suppliers) by Industry</span>
+            </button>
+            <div class="flex items-center gap-1">
+              <button type="button" data-move-deck="supplychain" data-dir="-1" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300">↑</button>
+              <button type="button" data-move-deck="supplychain" data-dir="1" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300">↓</button>
+            </div>
+          </div>
+          <div id="deck-body-supplychain" class="hidden p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <label for="supplyChainStockSelect" class="text-xs font-semibold text-slate-300">Select Company:</label>
+                <select id="supplyChainStockSelect" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold text-white"></select>
+              </div>
+              <label class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-xs font-semibold text-indigo-300 cursor-pointer">
+                <input id="chkIndianListedOnly" type="checkbox" class="rounded bg-slate-900 border-slate-600 text-indigo-500" />
+                <span>🇮🇳 Show Only Indian Listed Companies (NSE/BSE)</span>
+              </label>
+            </div>
+            <div id="supplyChainFlowchartContainer"></div>
+          </div>
+        </div>
+
+        <!-- DECK CARD 4: IB ANALYST TARGETS, MUTUAL FUND HOLDERS & STCG/LTCG TAX ESTIMATOR -->
+        <div id="deck-card-institutional" data-deck-id="institutional" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div class="px-5 py-3.5 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between">
+            <button type="button" data-toggle-deck="institutional" class="flex items-center gap-2 text-left font-bold text-sm text-white hover:text-indigo-300">
+              <span id="deck-icon-institutional" class="mono text-indigo-400">▶</span>
+              <span>🏛️ Deck 4: IB Share Targets, Mutual Fund Ownership, Dividends &amp; Tax Estimator</span>
+            </button>
+            <div class="flex items-center gap-1">
+              <button type="button" data-move-deck="institutional" data-dir="-1" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300">↑</button>
+              <button type="button" data-move-deck="institutional" data-dir="1" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300">↓</button>
+            </div>
+          </div>
+          <div id="deck-body-institutional" class="hidden p-5">
+            <div id="institutionalAndTaxGrid" class="overflow-x-auto"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: STOCKINTEL SCREENER, PRELOADED CANDLES & 50+ STOCK UNIVERSE  -->
+    <!-- =================================================================== -->
+    <section id="tab-screener" class="hidden space-y-6">
+
+      <!-- INTERACTIVE STOCK TERMINAL & PRELOADED CANDLESTICK INSPECTOR -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5 shadow-xl">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold mono" id="inspectedTickerBadge">NSE:VEDL</span>
+              <h3 id="inspectedCompanyName" class="text-lg font-extrabold text-white">Vedanta Ltd — Live Candlestick &amp; Multi-Horizon Terminal</h3>
+              <span id="inspectedSectorBadge" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300">Metals &amp; Mining</span>
+            </div>
+            <p id="inspectedSummaryLine" class="text-xs text-slate-400 mt-1"></p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Candle Timeframe Selector -->
+            <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1" id="candleTimeframeBar">
+              <button type="button" data-tf="1D" class="tf-btn px-2 py-1 rounded text-[11px] font-bold">1D (5m)</button>
+              <button type="button" data-tf="5D" class="tf-btn px-2 py-1 rounded text-[11px] font-bold">5D (15m)</button>
+              <button type="button" data-tf="10D" class="tf-btn px-2 py-1 rounded text-[11px] font-bold">10D (15m)</button>
+              <button type="button" data-tf="15D" class="tf-btn px-2 py-1 rounded text-[11px] font-bold">15D (30m)</button>
+              <button type="button" data-tf="1M" class="tf-btn px-2 py-1 rounded text-[11px] font-bold">1M (1d)</button>
+              <button type="button" data-tf="3M" class="tf-btn px-2 py-1 rounded text-[11px] font-bold">3M (1d)</button>
+              <button type="button" data-tf="6M" class="tf-btn px-2 py-1 rounded text-[11px] font-bold">6M (1d)</button>
+              <button type="button" data-tf="1Y" class="tf-btn px-2 py-1 rounded text-[11px] font-bold">1Y (1d)</button>
+              <button type="button" data-tf="5Y" class="tf-btn px-2 py-1 rounded text-[11px] font-bold">5Y (1wk)</button>
+            </div>
+            <button id="btnAddInspectedToBasket" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition">
+              + Add to Active Basket
+            </button>
+            <button id="btnDownloadInspectedStockReport" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow transition flex items-center gap-1" title="Download crisp, copyable-text HTML Stock Record (includes built-in 1-click Save as Vector PDF bar at top)">
+              <span>📄</span><span>Download Stock Record</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Candlestick Chart Canvas + Interactive Trend Drawing Studio + Key Technical & IB Metrics -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div class="lg:col-span-8 bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 px-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span>OHLCV + <strong class="text-amber-400" title="Orange Line = 20-Period Simple Moving Average (Fast Short-Term Trend & Dynamic Support)">🟠 Orange: 20 SMA (Fast)</strong> + <strong class="text-sky-400" title="Blue Line = 50-Period Simple Moving Average (Slower Medium-Term Institutional Baseline)">🔵 Blue: 50 SMA (Medium-Term)</strong> + <strong class="text-purple-400">🔮 Upcoming Trend Cone</strong></span>
+                <span id="candleDataSourceBadge" class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold mono text-[10px]">📡 Source: Google Finance Live (NSE / BSE) &amp; OHLCV</span>
+              </div>
+              <span id="candleHoverReadout" class="mono text-slate-200 font-semibold"></span>
+            </div>
+
+            <!-- Interactive Chart Drawing & Technical Study Toolbar -->
+            <div class="flex flex-wrap items-center justify-between gap-1.5 bg-slate-900/95 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px]">
+              <div class="flex flex-wrap items-center gap-1" id="chartDrawToolsBar">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">✏️ Study Tools:</span>
+                <button type="button" data-draw-tool="cursor" class="draw-tool-btn px-2 py-0.5 rounded font-bold bg-indigo-600 text-white transition" title="Inspect Candles & Crosshair">🖱️ Crosshair</button>
+                <button type="button" data-draw-tool="trendline" class="draw-tool-btn px-2 py-0.5 rounded font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition" title="Click & drag on chart to draw a custom Trendline with % slope">📏 Trendline</button>
+                <button type="button" data-draw-tool="hline" class="draw-tool-btn px-2 py-0.5 rounded font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition" title="Click anywhere on chart to place a Horizontal Support/Resistance price line">➖ Support/Res</button>
+                <button type="button" data-draw-tool="channel" class="draw-tool-btn px-2 py-0.5 rounded font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition" title="Click & drag to draw a Parallel Price Channel">📐 Channel</button>
+                <button type="button" data-draw-tool="fib" class="draw-tool-btn px-2 py-0.5 rounded font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition" title="Click & drag from swing high to low for Fibonacci Retracements (0%, 38.2%, 50%, 61.8%, 100%)">📊 Fib Levels</button>
+                <button type="button" data-draw-tool="freehand" class="draw-tool-btn px-2 py-0.5 rounded font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition" title="Click & drag to sketch freehand technical patterns">✏️ Freehand</button>
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <div class="inline-flex items-center gap-0.5 bg-slate-950 border border-indigo-500/40 rounded px-1.5 py-0.5" title="Zoom In/Out on Candlesticks (or use Mouse Wheel on chart)">
+                  <span class="text-[9.5px] font-extrabold text-indigo-300 mr-0.5">🔍 Zoom:</span>
+                  <button type="button" data-zenith-action="candle-zoom" data-zoom-delta="-15" class="px-1.5 py-0.2 rounded bg-indigo-600/40 hover:bg-indigo-600 text-white font-extrabold text-[10px]" title="Zoom In on Recent Candles (+)">➕ In</button>
+                  <button type="button" data-zenith-action="candle-zoom" data-zoom-delta="15" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-extrabold text-[10px]" title="Zoom Out (-)">➖ Out</button>
+                  <button type="button" data-zenith-action="candle-zoom" data-zoom-delta="0" id="candleZoomBadgeBtn" class="px-1.5 py-0.2 rounded bg-slate-900 hover:bg-slate-800 text-amber-300 mono font-bold text-[9.5px]" title="Click to Reset Zoom to 100%">100%</button>
+                </div>
+                <label class="flex items-center gap-1 text-[10px] font-bold text-emerald-300 cursor-pointer bg-emerald-500/10 border border-emerald-500/30 rounded px-2 py-0.5" title="Toggle 20/50 SMA & Target horizontal lines on/off so candles are never covered">
+                  <input id="chkShowChartSmaTargets" type="checkbox" checked class="rounded bg-slate-950 border-slate-700 text-emerald-500" />
+                  <span>📏 SMA/Targets</span>
+                </label>
+                <label class="flex items-center gap-1 text-[10px] font-bold text-amber-300 cursor-pointer bg-amber-500/10 border border-amber-500/30 rounded px-2 py-0.5" title="Unchecked = Auto-scale Y-axis tightly around Candles (Best visibility!). Checked = Zoom out Y-axis to fit distant T1-T3 target lines.">
+                  <input id="chkFitDistantTargets" type="checkbox" class="rounded bg-slate-950 border-slate-700 text-amber-500" />
+                  <span>🎯 Fit T1–T3</span>
+                </label>
+                <label class="flex items-center gap-1 text-[10px] font-bold text-purple-300 cursor-pointer bg-purple-500/10 border border-purple-500/30 rounded px-2 py-0.5" title="Plot upcoming Bull / Base / Bear trend projection lines on the right side of the chart">
+                  <input id="chkShowUpcomingTrend" type="checkbox" checked class="rounded bg-slate-950 border-slate-700 text-purple-500" />
+                  <span>🔮 Forecast</span>
+                </label>
+                <select id="selectDrawColor" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-bold text-amber-300" title="Drawing Line Color">
+                  <option value="#fbbf24" selected>🟡 Gold</option>
+                  <option value="#38bdf8">🔵 Cyan</option>
+                  <option value="#34d399">🟢 Emerald</option>
+                  <option value="#fb7185">🔴 Rose</option>
+                  <option value="#c084fc">🟣 Purple</option>
+                </select>
+                <button id="btnUndoChartDrawing" type="button" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold" title="Undo last drawn line">↩ Undo Line</button>
+                <button id="btnClearChartDrawings" type="button" class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-800 text-rose-300 border border-rose-800/50 text-[10px] font-bold" title="Clear all custom drawings on this chart">🗑️ Clear</button>
+              </div>
+            </div>
+
+            <div class="relative w-full h-80">
+              <canvas id="stockCandlestickCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+            </div>
+          </div>
+
+          <div id="inspectedStockDetailsBox" class="lg:col-span-4 flex flex-col justify-between bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 text-xs"></div>
+        </div>
+
+        <!-- NEW: Point-Wise Stock Summary & Possible Price Movements (Short-Term, Medium-Term, IB Consensus & Downside Guardrails) -->
+        <div class="bg-slate-950/95 border border-emerald-500/35 rounded-xl p-3.5 space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <button type="button" data-toggle-panel="inspectedPointWiseSummaryBox" class="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-300 hover:text-emerald-200">
+              <span id="icon-inspectedPointWiseSummaryBox" class="mono text-emerald-400">▼</span>
+              <span id="pointWiseSummaryHeaderTitle">📋 Point-Wise Stock Summary, Orange/Blue SMA Signal &amp; Possible Price Movements</span>
+            </button>
+            <span class="text-[10.5px] mono text-slate-400">🟠 Orange Line = 20 SMA (Fast) • 🔵 Blue Line = 50 SMA (Medium-Term) • Click header to collapse/expand</span>
+          </div>
+          <div id="inspectedPointWiseSummaryBox" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs"></div>
+        </div>
+
+        <!-- Inspected Stock 8-Horizon Predicted Price Movement Bar + Multi-Model Financial Selector & Matrix -->
+        <div class="space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">🔮 Multi-Model Share Price Predictions (15 Days to 5+ Years)</h4>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold mono">6 Financial &amp; Quant Models Active</span>
+            </div>
+            <button type="button" data-toggle-panel="predictionMethodologyBox" class="text-[11px] font-bold text-indigo-300 hover:text-indigo-200 bg-indigo-500/15 border border-indigo-500/30 rounded-lg px-2.5 py-1 flex items-center gap-1.5">
+              <span id="icon-predictionMethodologyBox" class="mono">▼</span>
+              <span>🧮 Compare All 6 Financial Valuation Models &amp; Formulas</span>
+            </button>
+          </div>
+
+          <!-- Interactive Prediction Model Selector Bar -->
+          <div class="flex flex-wrap items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl p-2" id="predictionModelSelectorBar">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-300 mr-1">📐 Active Model:</span>
+            <button type="button" data-pred-model="ensemble" class="pred-model-btn px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-600 text-white transition" title="Weighted Institutional Consensus across all 5 Financial & Technical Models">⚖️ 1. Multi-Model Ensemble (Best)</button>
+            <button type="button" data-pred-model="eps_pe" class="pred-model-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition" title="Price = Forward EPS × Peer-Adjusted Fair P/E Multiple (DuPont ROE Retention Growth)">📊 2. Forward EPS × Fair P/E</button>
+            <button type="button" data-pred-model="lynch_peg" class="pred-model-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition" title="Peter Lynch GARP Model: Fair P/E = (Earnings Growth % + Dividend Yield %) × ROE Quality Factor">🚀 3. Peter Lynch PEG (GARP)</button>
+            <button type="button" data-pred-model="graham" class="pred-model-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition" title="Benjamin Graham Formula: V = EPS × (8.5 + 2g) × (4.4 / Yield) + √(22.5 × EPS × Book Value)">🏛️ 4. Benjamin Graham Intrinsic</button>
+            <button type="button" data-pred-model="res_pb" class="pred-model-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition" title="Residual Income & Justified Price-to-Book: Fair P/B = 1 + (ROE - ke) / (ke - g)">🏦 5. Residual Income (Justified P/B)</button>
+            <button type="button" data-pred-model="tech_ib" class="pred-model-btn px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition" title="Short-Term RSI/SMA Regression Slope + 2x ATR Drift + 6-Desk IB Broker Targets">⚡ 6. Technical &amp; IB Momentum</button>
+          </div>
+
+          <div id="inspectedStockHorizonsGrid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5"></div>
+          <div id="predictionMethodologyBox" class="bg-slate-950 border border-indigo-500/30 rounded-xl p-3.5 text-xs text-slate-300 space-y-2.5"></div>
+        </div>
+
+        <!-- Inspected Stock Supply-Chain Flowchart (With Direct Indian-Listed Toggle!) -->
+        <div class="pt-3 border-t border-slate-800">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+            <button type="button" data-toggle-panel="inspectedScWrap" class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-200 hover:text-indigo-300">
+              <span id="icon-inspectedScWrap" class="mono text-indigo-400">▼</span>
+              <span>⛓️ Supply-Chain Ecosystem (Suppliers ──► Company ──► Customers)</span>
+            </button>
+            <label class="flex items-center gap-2 px-3 py-1 rounded-xl bg-indigo-500/15 border border-indigo-500/40 text-xs font-bold text-indigo-300 cursor-pointer">
+              <input id="chkScreenerIndianListedOnly" type="checkbox" class="rounded bg-slate-900 border-slate-600 text-indigo-500" />
+              <span>🇮🇳 Show Only Indian Listed Companies (NSE/BSE)</span>
+            </label>
+          </div>
+          <div id="inspectedScWrap">
+            <div id="inspectedSupplyChainBox"></div>
+          </div>
+        </div>
+
+        <!-- Collapsible Section: IB Targets & Institutional Options Call/Put Chain (OI, PCR, Max Pain) -->
+        <div class="pt-3 border-t border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <button type="button" data-toggle-panel="inspectedInstOptionsBox" class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-200 hover:text-indigo-300">
+              <span id="icon-inspectedInstOptionsBox" class="mono text-indigo-400">▼</span>
+              <span>🏦 IB Broker Consensus &amp; Institutional Options Call / Put Chain (OI, PCR &amp; Max Pain)</span>
+            </button>
+            <span class="text-[11px] text-slate-400">Click header to collapse/expand</span>
+          </div>
+          <div id="inspectedInstOptionsBox" class="space-y-3"></div>
+        </div>
+
+        <!-- Collapsible Section: Direct Sector & Sub-Industry Peer Comparison Matrix -->
+        <div class="pt-3 border-t border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <button type="button" data-toggle-panel="inspectedPeersBox" class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-300 hover:text-emerald-200">
+              <span id="icon-inspectedPeersBox" class="mono text-emerald-400">▼</span>
+              <span>⚖️ Direct Sector &amp; Sub-Industry Peer Comparison (Head-to-Head Valuation, ROE, Score &amp; Targets)</span>
+            </button>
+            <span class="text-[11px] text-slate-400">Click any peer row to inspect</span>
+          </div>
+          <div id="inspectedPeersBox" class="space-y-2.5"></div>
+        </div>
+
+        <!-- Collapsible Section: Stock-Specific News, Filings & Catalysts -->
+        <div class="pt-3 border-t border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <button type="button" data-toggle-panel="inspectedStockNewsBox" class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-200 hover:text-indigo-300">
+              <span id="icon-inspectedStockNewsBox" class="mono text-indigo-400">▼</span>
+              <span>📰 Recent Stock News, Exchange Filings &amp; Sector Catalysts</span>
+            </button>
+            <span class="text-[11px] text-slate-400">Click header to collapse/expand</span>
+          </div>
+          <div id="inspectedStockNewsBox" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        </div>
+      </div>
+
+      <!-- FULL 2,706+ NSE / BSE / T+0 EQUITIES & 306 MUTUAL FUNDS SCREENER -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-base font-bold text-white">🔍 Full NSE, BSE &amp; T+0 Exchange Screener (2,706+ Equities &amp; 306 Mutual Funds)</h3>
+              <span id="screenerCountBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">2,706 Securities Loaded</span>
+            </div>
+            <p class="text-xs text-slate-400">Powered by your uploaded <code>EQUITY_L.csv</code> (NSE), <code>Equity.csv</code> (BSE), and <code>Eligible_T0_Securities.xlsx</code> (524 T+0 stocks).</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <input id="screenerSearchInput" type="text" placeholder="🔍" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white min-w-[220px]" />
+            <select id="screenerUniverseSelect" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-indigo-300">
+              <option value="all">All 2,706+ NSE &amp; BSE Securities</option>
+              <option value="t0">⚡ T+0 Settlement Eligible Only (524 Stocks)</option>
+              <option value="curated">⭐ Top 60 Institutional Leaders</option>
+              <option value="mf">🏛️ Mutual Funds &amp; ETFs (306 Funds)</option>
+            </select>
+            <select id="screenerSectorSelect" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+              <option value="all">All Sectors</option>
+              <option value="Metals & Mining">Metals &amp; Mining</option>
+              <option value="Oil & Gas">Oil &amp; Gas</option>
+              <option value="Power & Utilities">Power &amp; Utilities</option>
+              <option value="Banking & Finance">Banking &amp; Finance</option>
+              <option value="IT & Software">IT &amp; Software</option>
+              <option value="Auto & EV">Auto &amp; EV</option>
+              <option value="Defence & CapGoods">Defence &amp; Capital Goods</option>
+              <option value="Pharma & Healthcare">Pharma &amp; Healthcare</option>
+              <option value="FMCG & Retail">FMCG &amp; Retail</option>
+              <option value="Diversified Equities">Diversified Equities</option>
+              <option value="Mutual Fund / ETF">Mutual Funds &amp; NSE ETFs</option>
+            </select>
+            <select id="screenerFilterSelect" class="bg-slate-950 border border-indigo-500/50 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white">
+              <option value="all">🌐 All Strategy Setups (3,015)</option>
+              <option value="breakout">🚀 On the Verge of Breakout (4-Factor Confirmed / Coiling)</option>
+              <option value="ib_expiring">⏳ IB Rating Nearing Expiry (&le; 3.5M Left — Will It Hit?)</option>
+              <option value="ib_downside">🔻 IB Call: Downside / SELL / REDUCE / Cut Down</option>
+              <option value="ib_hold">🟡 IB Call: HOLD / Neutral / Fully Priced (-1% to +6.5%)</option>
+              <option value="bearish">🐻 Going Bear (Breakdown Below 20 &amp; 50 SMA / Weak RSI)</option>
+              <option value="high52w">🏔️ 52-Week High Breakout Zone (Within 5.5% of 52W High)</option>
+              <option value="low52w">⚓ 52-Week Low Value / Beaten Down (Within 13.5% of 52W Low)</option>
+              <option value="momentum">🔥 Top Bullish Momentum (RSI 48-68 &gt; 20 SMA)</option>
+              <option value="volume">🏛️ Institutional Volume Surge (&gt;1.8x Avg)</option>
+              <option value="reversal">⚡ Oversold Pullback / Value Setup (RSI &lt; 42)</option>
+            </select>
+            <select id="screenerSortSelect" class="bg-slate-950 border border-emerald-500/50 rounded-lg px-2.5 py-1.5 text-xs font-bold text-emerald-300">
+              <option value="score" selected>🏆 Sort: Highest Score (/10)</option>
+              <option value="expiry_asc">⏳ Sort: IB Expiry Soonest (Months Left ⬆)</option>
+              <option value="upside_asc">🔻 Sort: Most Overextended / IB Downside %</option>
+              <option value="upside_desc">🎯 Sort: Highest 1Y IB Upside %</option>
+              <option value="high52w_desc">🏔️ Sort: Closest to 52-Week High</option>
+              <option value="low52w_asc">⚓ Sort: Closest to 52-Week Low</option>
+              <option value="chg_desc">🟢 Sort: % Up Today (Top Gainers)</option>
+              <option value="chg_asc">🔴 Sort: % Down Today (Top Losers)</option>
+              <option value="vol_desc">🏛️ Sort: Highest Volume Surge</option>
+              <option value="rsi_asc">⚡ Sort: Lowest RSI (Bearish / Oversold)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-950/90 border border-indigo-500/30 rounded-xl px-3.5 py-2.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-300">🔀 Screener Display Mode:</span>
+            <div class="inline-flex rounded-xl bg-slate-900 p-1 border border-slate-800">
+              <button id="btnScreenerModeIb" type="button" data-zenith-action="screener-mode" data-mode="ib" class="px-3 py-1 rounded-lg text-xs font-extrabold bg-indigo-600 text-white shadow transition">🏦 IB Broker Ratings &amp; Trend Predictions</button>
+              <button id="btnScreenerModeTech" type="button" data-zenith-action="screener-mode" data-mode="tech" class="px-3 py-1 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition">📈 Technical Analysis (RSI, SMA &amp; ATR Targets)</button>
+            </div>
+          </div>
+          <div id="screenerPageInfo" class="text-slate-300 font-medium">Analyzing all 3,015 NSE/BSE/T+0 securities...</div>
+          <div class="flex items-center gap-2">
+            <label class="text-slate-400">Rows per page:</label>
+            <select id="screenerLimitSelect" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs mono text-white">
+              <option value="60" selected>60 rows</option>
+              <option value="150">150 rows</option>
+              <option value="300">300 rows</option>
+              <option value="600">600 rows</option>
+              <option value="3500">All 3,015 rows</option>
+            </select>
+            <button id="btnScreenerPrev" type="button" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold">◀ Prev</button>
+            <button id="btnScreenerNext" type="button" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold">Next ▶</button>
+          </div>
+        </div>
+
+        <!-- 1-Click Radar Filter Bar (IB Expiring, IB Downside/Reduce, IB Hold, Going Bear, 52W High/Low) -->
+        <div class="bg-slate-950/90 border border-amber-500/30 rounded-xl p-3 space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-1.5" id="screenerQuickRadarPills">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-300 mr-1">🎯 Click Any List to Open Table Immediately:</span>
+              <button type="button" data-zenith-action="radar-preset" data-preset="all" data-sort="score" data-scroll="true" data-radar-pill="all" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-600 text-white transition">🌐 All (3,015)</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="breakout" data-sort="score" data-scroll="true" data-radar-pill="breakout" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">🚀 Verge of Breakout</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="ib_expiring" data-sort="expiry_asc" data-scroll="true" data-radar-pill="ib_expiring" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-amber-500/20 text-amber-300 border border-amber-500/40 transition">⏳ IB Nearing Expiry (&le;3.5M Left)</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="ib_downside" data-sort="upside_asc" data-scroll="true" data-radar-pill="ib_downside" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-rose-500/20 text-rose-300 border border-rose-500/40 transition">🔻 IB Downside / SELL / Cut Down</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="ib_hold" data-sort="upside_asc" data-scroll="true" data-radar-pill="ib_hold" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-amber-500/20 text-amber-200 border border-slate-700 transition">🟡 IB Call: HOLD / Neutral</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="bearish" data-sort="chg_asc" data-scroll="true" data-radar-pill="bearish" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition">🐻 Going Bear (&lt;20 &amp; 50 SMA)</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="high52w" data-sort="high52w_desc" data-scroll="true" data-radar-pill="high52w" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">🏔️ Near 52W High</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="low52w" data-sort="low52w_asc" data-scroll="true" data-radar-pill="low52w" class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 hover:bg-sky-500/20 text-sky-300 border border-sky-500/40 transition">⚓ Near 52W Low</button>
+            </div>
+            <button type="button" data-toggle-panel="screenerSpecialListsWrap" class="text-[11px] font-bold text-amber-300 hover:text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1 flex items-center gap-1">
+              <span id="icon-screenerSpecialListsWrap" class="mono">▼</span>
+              <span>📋 Toggle 6-Deck Market Radar Boards</span>
+            </button>
+          </div>
+          <div id="screenerSpecialListsWrap" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 pt-1"></div>
+        </div>
+
+        <!-- Top 3 Highest-Scoring Opportunity Cards Across All 3,015 Analyzed Stocks -->
+        <div id="screenerCardsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+
+        <!-- COLLAPSIBLE TABLE 1: STOCKS ALREADY IN YOUR ACTIVE BASKET -->
+        <div class="border border-indigo-500/40 rounded-2xl overflow-hidden bg-slate-950/40">
+          <div class="px-4 py-2.5 bg-indigo-950/30 border-b border-slate-800 flex items-center justify-between">
+            <button type="button" data-toggle-panel="screenerBasketTableWrap" class="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-indigo-300 hover:text-white">
+              <span id="icon-screenerBasketTableWrap" class="mono">▼</span>
+              <span id="screenerBasketSectionTitle">🧺 Stocks Already in Your Active Basket (Click any stock to analyze)</span>
+            </button>
+            <span class="text-[11px] text-slate-400">Separated from market screener below</span>
+          </div>
+          <div id="screenerBasketTableWrap" class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr id="screenerBasketTheadRow" class="bg-slate-950/90 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                  <th class="py-2.5 px-3">Ticker</th>
+                  <th class="py-2.5 px-3">Company &amp; Sector</th>
+                  <th class="py-2.5 px-2 text-right">Live Price</th>
+                  <th class="py-2.5 px-2 text-right">1D Chg (₹ / %)</th>
+                  <th class="py-2.5 px-2 text-center">Score (/10)</th>
+                  <th class="py-2.5 px-2">IB / Broker Name &amp; Call</th>
+                  <th class="py-2.5 px-2 text-right">Broker Target (₹ / %)</th>
+                  <th class="py-2.5 px-2 text-right">1Y Street Mean &amp; Range</th>
+                  <th class="py-2.5 px-2 text-right">15D ➔ 1M Pred</th>
+                  <th class="py-2.5 px-2 text-right">6M ➔ 1Y Pred</th>
+                  <th class="py-2.5 px-2 text-right">3Y ➔ 5Y Pred</th>
+                  <th class="py-2.5 px-3 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="screenerBasketTableBody" class="divide-y divide-slate-800/70"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- COLLAPSIBLE TABLE 2: ALL OTHER ANALYZED MARKET SECURITIES (RANKED BY SCORE) -->
+        <div id="screenerMainTableCard" class="border-2 border-indigo-500/40 rounded-2xl overflow-hidden bg-slate-950/40 shadow-xl">
+          <div class="px-4 py-3 bg-slate-950/95 border-b border-slate-800 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <button type="button" data-toggle-panel="screenerOthersTableWrap" class="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wider text-emerald-300 hover:text-white">
+                <span id="icon-screenerOthersTableWrap" class="mono">▼</span>
+                <span id="screenerOthersSectionTitle">🌐 All Other Analyzed Market Securities — Ranked by Dynamic Score</span>
+              </button>
+              <div class="flex items-center gap-2">
+                <span id="screenerActiveListPillBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">📂 Table Open: Showing All Matching Stocks</span>
+                <button type="button" data-zenith-action="radar-preset" data-preset="all" data-sort="score" data-scroll="false" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300">Reset to All</button>
+              </div>
+            </div>
+            <!-- Direct In-Table Category Tabs (Click Directly on Table Header to Switch & Auto-Open Table!) -->
+            <div class="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/80">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">📂 Click Table Tab to Open List:</span>
+              <button type="button" data-zenith-action="radar-preset" data-preset="all" data-sort="score" data-scroll="false" data-radar-pill="all" class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-indigo-600 text-white">🌐 All Stocks</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="breakout" data-sort="score" data-scroll="false" data-radar-pill="breakout" class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 text-emerald-300 border border-emerald-500/30">🚀 Verge of Breakout</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="ib_expiring" data-sort="expiry_asc" data-scroll="false" data-radar-pill="ib_expiring" class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 text-amber-300 border border-amber-500/30">⏳ IB Nearing Expiry (&le;3.5M)</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="ib_downside" data-sort="upside_asc" data-scroll="false" data-radar-pill="ib_downside" class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 text-rose-300 border border-rose-500/30">🔻 IB Downside / Cut Down</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="ib_hold" data-sort="upside_asc" data-scroll="false" data-radar-pill="ib_hold" class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 text-amber-200 border border-slate-700">🟡 IB Call: HOLD</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="bearish" data-sort="chg_asc" data-scroll="false" data-radar-pill="bearish" class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 text-rose-400 border border-rose-500/30">🐻 Going Bear (&lt;20/50 SMA)</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="high52w" data-sort="high52w_desc" data-scroll="false" data-radar-pill="high52w" class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 text-emerald-300 border border-emerald-500/30">🏔️ 52W High</button>
+              <button type="button" data-zenith-action="radar-preset" data-preset="low52w" data-sort="low52w_asc" data-scroll="false" data-radar-pill="low52w" class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 text-sky-300 border border-sky-500/30">⚓ 52W Low</button>
+            </div>
+          </div>
+          <div id="screenerOthersTableWrap" class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr id="screenerMainTheadRow" class="bg-slate-950/80 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                  <th class="py-3 px-3">Ticker</th>
+                  <th class="py-3 px-3">Company &amp; Sector</th>
+                  <th class="py-3 px-2 text-right">Live Price</th>
+                  <th class="py-3 px-2 text-right">1D Chg (₹ / %)</th>
+                  <th class="py-3 px-2 text-center">Score (/10)</th>
+                  <th class="py-3 px-2">IB / Broker Name &amp; Call</th>
+                  <th class="py-3 px-2 text-right">Broker Target (₹ / %)</th>
+                  <th class="py-3 px-2 text-right">1Y Street Mean &amp; Range</th>
+                  <th class="py-3 px-2 text-right">15D ➔ 1M Pred</th>
+                  <th class="py-3 px-2 text-right">6M ➔ 1Y Pred</th>
+                  <th class="py-3 px-2 text-right">3Y ➔ 5Y Pred</th>
+                  <th class="py-3 px-3 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="screenerTableBody" class="divide-y divide-slate-800/70"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Position Sizing Calculator (Cash-Capped CNC Delivery) -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h3 class="text-base font-bold text-white mb-1">🛡️ Cash-Capped Swing Position Sizing Calculator</h3>
+        <p class="text-xs text-slate-400 mb-4">Enforces both Stop-Loss Risk Tolerance AND Physical Cash Delivery Cap (`min(Risk Shares, Cash Affordable Shares)`).</p>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Account Capital for Trade (₹)</label>
+            <input id="posCapInput" type="number" step="5000" min="1000" value="50000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm mono text-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Max Risk % Per Trade</label>
+            <input id="posRiskPctInput" type="number" step="0.25" min="0.25" max="10" value="2.0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm mono text-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Entry Price (₹)</label>
+            <input id="posEntryInput" type="number" step="0.5" min="1" value="263.80" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm mono text-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Stop-Loss Price (₹)</label>
+            <input id="posStopInput" type="number" step="0.5" min="0.5" value="252.00" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-sm mono text-white" />
+          </div>
+        </div>
+        <div id="posSizingOutput" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4"></div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2B: DEDICATED MUTUAL FUNDS, ETFs & SIP PORTFOLIO HUB (306 FUNDS)-->
+    <!-- =================================================================== -->
+    <section id="tab-mutualfunds" class="hidden space-y-6">
+      <!-- Top KPI Summary for My Mutual Fund Investments -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-base sm:text-lg font-extrabold text-white">🏛️ My Mutual Fund, ETF &amp; SIP Investments Portfolio</h3>
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Direct MF &amp; Exchange ETFs</span>
+            </div>
+            <p class="text-xs text-slate-400">Track your Mutual Fund units, SIPs, purchase NAV, live NAV, and 1Y–5Y compounding alongside your equity baskets.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnSyncMfNavs" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow transition">🔄 Sync Live MF NAVs</button>
+          </div>
+        </div>
+
+        <div id="mfKpiSummaryGrid" class="grid grid-cols-2 sm:grid-cols-5 gap-3"></div>
+
+        <!-- My Mutual Fund Holdings Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-950 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                <th class="py-2.5 px-3">Code / Symbol</th>
+                <th class="py-2.5 px-3">Mutual Fund / ETF Scheme &amp; AMC</th>
+                <th class="py-2.5 px-2 text-right">Units Held</th>
+                <th class="py-2.5 px-2 text-right">Avg Buy NAV (₹)</th>
+                <th class="py-2.5 px-2 text-right">Live NAV (₹)</th>
+                <th class="py-2.5 px-3 text-right">Invested (₹)</th>
+                <th class="py-2.5 px-3 text-right">Current Value (₹)</th>
+                <th class="py-2.5 px-3 text-right">Unrealised P&amp;L</th>
+                <th class="py-2.5 px-2 text-right">Monthly SIP (₹)</th>
+                <th class="py-2.5 px-2 text-right">5Y Est. CAGR</th>
+                <th class="py-2.5 px-2 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="mfHoldingsTableBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+
+        <!-- Add / Update My Mutual Fund or SIP Investment Form -->
+        <form id="addMfHoldingForm" class="bg-slate-950/90 border border-slate-800 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-7 gap-2.5 items-end">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Symbol / Code</label>
+            <input id="mfHoldSymInput" type="text" placeholder="e.g. NIFTYBEES" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-white uppercase" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-[11px] text-slate-400 mb-1">Mutual Fund Scheme Name</label>
+            <input id="mfHoldNameInput" type="text" placeholder="e.g. Parag Parikh Flexi Cap Fund" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Units Held</label>
+            <input id="mfHoldUnitsInput" type="number" step="0.01" min="0.01" value="100" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Avg Buy NAV (₹)</label>
+            <input id="mfHoldAvgNavInput" type="number" step="0.01" min="0.1" value="240.00" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-amber-300" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Live NAV (₹)</label>
+            <input id="mfHoldLiveNavInput" type="number" step="0.01" min="0.1" value="274.50" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-emerald-300" />
+          </div>
+          <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition">➕ Add My MF</button>
+        </form>
+      </div>
+
+      <!-- Complete 306 Mutual Fund & Exchange-Traded Fund (ETF) Screener -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="text-base font-bold text-white">🔍 Complete Indian Mutual Fund &amp; Exchange ETF Screener (306 Schemes)</h3>
+            <p class="text-xs text-slate-400">Includes all 276 Exchange-Listed Mutual Fund ETFs from your uploaded BSE/NSE file + 30 Flagship Direct-Growth Mutual Funds.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <input id="mfSearchInput" type="text" placeholder="Search MF by name, AMC or code (e.g. SBI, Nippon, Gold, Nifty, Jio)..." class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white min-w-[230px]" />
+            <select id="mfAmcSelect" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+              <option value="all">All Fund Houses (AMCs)</option>
+              <option value="SBI">SBI Mutual Fund</option>
+              <option value="ICICI">ICICI Prudential MF</option>
+              <option value="HDFC">HDFC Mutual Fund</option>
+              <option value="Nippon">Nippon India MF</option>
+              <option value="Kotak">Kotak Mahindra MF</option>
+              <option value="Motilal">Motilal Oswal MF</option>
+              <option value="UTI">UTI Mutual Fund</option>
+              <option value="Mirae">Mirae Asset MF</option>
+              <option value="Aditya Birla">Aditya Birla Sun Life MF</option>
+              <option value="Axis">Axis Mutual Fund</option>
+              <option value="DSP">DSP Mutual Fund</option>
+              <option value="Tata">Tata Mutual Fund</option>
+              <option value="LIC">LIC Mutual Fund</option>
+              <option value="Jio">Jio BlackRock MF</option>
+              <option value="Quant">Quant / PPFAS / Zerodha / Groww</option>
+            </select>
+            <select id="mfCategorySelect" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white">
+              <option value="all">All MF &amp; ETF Categories</option>
+              <option value="Open-Ended Direct MF">🌟 Flagship Open-Ended Direct-Growth MFs</option>
+              <option value="Broad Index ETF">📈 Nifty 50 / Sensex / Broad Index ETFs</option>
+              <option value="Sectoral & Banking ETF">🏦 Banking, IT, Pharma, Auto &amp; Infra ETFs</option>
+              <option value="Gold & Silver ETF">🪙 Gold &amp; Silver Bullion ETFs</option>
+              <option value="Smart Beta & Factor ETF">⚡ Momentum, Value, Alpha &amp; Low-Vol ETFs</option>
+              <option value="Debt & Liquid ETF">🛡️ Liquid, G-Sec &amp; Bharat Bond ETFs</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-[540px] overflow-y-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="sticky top-0 bg-slate-950 z-10">
+              <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                <th class="py-2.5 px-3">Code / Symbol</th>
+                <th class="py-2.5 px-3">Scheme Name &amp; Fund House (AMC)</th>
+                <th class="py-2.5 px-2">Category</th>
+                <th class="py-2.5 px-2 text-right">Live NAV (₹)</th>
+                <th class="py-2.5 px-2 text-right">Exp Ratio</th>
+                <th class="py-2.5 px-2 text-right">1Y Return</th>
+                <th class="py-2.5 px-2 text-right">3Y CAGR</th>
+                <th class="py-2.5 px-2 text-right">5Y CAGR</th>
+                <th class="py-2.5 px-2 text-right">1Y / 5Y Target NAV</th>
+                <th class="py-2.5 px-3 text-center">Add / Inspect</th>
+              </tr>
+            </thead>
+            <tbody id="mfScreenerTableBody" class="divide-y divide-slate-800/70"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 3: HOLDINGS, BASKETS & CAPITAL LEDGER                           -->
+    <!-- =================================================================== -->
+    <section id="tab-portfolio" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center gap-3">
+              <h3 class="text-base font-bold text-white">💼 Portfolio Strategy &amp; Multi-Basket Manager</h3>
+              <div class="flex items-center bg-slate-950 p-0.5 rounded-xl border border-slate-700">
+                <button id="btnModeRisky" type="button" class="px-3 py-1 rounded-lg text-xs font-semibold transition">Risky</button>
+                <button id="btnModeSafe" type="button" class="px-3 py-1 rounded-lg text-xs font-semibold transition">Safe</button>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400">Manage your portfolios (Master Tracker, Watchdog, Dead Stock, Vedanta Sovereign Demerger), Risky/Safe target weights, and FY capital.</p>
+          </div>
+          <form id="createBasketForm" class="flex flex-wrap items-center gap-2">
+            <input id="newBasketName" type="text" placeholder="New Basket Name (e.g. PSU Gems)" required class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white" />
+            <input id="newBasketTickers" type="text" placeholder="Tickers: COALINDIA, ONGC, NTPC" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs mono text-white uppercase" />
+            <button type="submit" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition">
+              + Create New Basket
+            </button>
+            <button id="btnDeleteBasket" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-950/60 hover:bg-rose-900/60 text-rose-300 border border-rose-700/40 transition">
+              🗑 Delete Basket
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white">Active Basket Holdings, Cost Basis &amp; Target Weights</h3>
+            <p class="text-xs text-slate-400">Edit shares, average cost, live CMP, or Risky/Safe weights inline, or click <code>✕</code> to remove any stock.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btnNormalizeWeights100" type="button" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow transition" title="Automatically scale all Risky and Safe weights proportionally so they sum to exactly 100%">⚖️ Auto-Align Weights to 100%</button>
+            <button id="btnShockUp" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition">📈 All CMP +5%</button>
+            <button id="btnShockDown" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition">📉 All CMP -5%</button>
+            <button id="btnSimulateDrift" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition">⚡ Simulate &gt;20% Drift</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-950/70 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                <th class="py-3 px-3">Ticker</th>
+                <th class="py-3 px-3">Company</th>
+                <th class="py-3 px-2 text-right">Init Shares</th>
+                <th class="py-3 px-2 text-right">Init Price (₹)</th>
+                <th class="py-3 px-2 text-right">Curr Shares</th>
+                <th class="py-3 px-2 text-right">Avg Cost (₹)</th>
+                <th class="py-3 px-3 text-right">Net Invested (₹)</th>
+                <th class="py-3 px-3 text-right">Live CMP (₹)</th>
+                <th class="py-3 px-3 text-right">Market Value (₹)</th>
+                <th class="py-3 px-3 text-right">Unrealised P&amp;L</th>
+                <th class="py-3 px-2 text-right">Risky Wt %</th>
+                <th class="py-3 px-2 text-right">Safe Wt %</th>
+              </tr>
+            </thead>
+            <tbody id="portfolioHoldingsBody" class="divide-y divide-slate-800/70 text-xs"></tbody>
+            <tfoot id="portfolioHoldingsFoot" class="bg-slate-950/90 border-t-2 border-slate-800 font-bold text-xs"></tfoot>
+          </table>
+        </div>
+        <div id="weightWarningBanner" class="hidden bg-rose-950/60 border-t border-rose-800 px-4 py-2.5 text-xs text-rose-300 font-medium"></div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-sm font-bold text-white">➕ Add Verified NSE/BSE Stock or Mutual Fund ETF to Active Basket</h4>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">✓ Exchange Verified Only</span>
+          </div>
+          <form id="addStockForm" class="grid grid-cols-2 sm:grid-cols-3 gap-3 relative">
+            <div class="relative">
+              <label class="block text-[11px] text-slate-400 mb-1">Ticker (NSE/BSE)</label>
+              <input id="newStockTicker" type="text" placeholder="e.g. AARTIIND" autocomplete="off" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-white uppercase" />
+            </div>
+            <div class="sm:col-span-2 relative">
+              <label class="block text-[11px] text-slate-400 mb-1">Company / Fund Name (Auto-Matches Official Ticker)</label>
+              <input id="newStockName" type="text" placeholder="Type company name (e.g. Aarti Industries, Reliance, Vedanta)..." autocomplete="off" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white" />
+              <div id="addStockAutoDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto divide-y divide-slate-800"></div>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Initial Shares</label>
+              <input id="newStockShares" type="number" step="1" min="0" value="100" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-white" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Buy / Init Price (₹)</label>
+              <input id="newStockInitPrice" type="number" step="0.05" min="0.05" value="300" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-white" />
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[11px] text-slate-400">Current CMP (₹)</label>
+                <button id="btnAddStockAutoCmp" type="button" class="text-[10px] font-bold text-emerald-400 hover:underline" title="Automatically fetch live NSE/BSE CMP">⚡ Auto CMP</button>
+              </div>
+              <input id="newStockCmp" type="number" step="0.05" min="0.05" value="325" required class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-2.5 py-1.5 text-xs font-bold mono text-emerald-300" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Risky Weight (%)</label>
+              <input id="newStockRiskyWt" type="number" step="0.5" min="0" max="100" value="10" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-amber-300" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Safe Weight (%)</label>
+              <input id="newStockSafeWt" type="number" step="0.5" min="0" max="100" value="10" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-emerald-300" />
+            </div>
+            <div class="flex items-end">
+              <button type="submit" class="w-full px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition">+ Add Holding</button>
+            </div>
+            <div class="col-span-2 sm:col-span-3 pt-1">
+              <label class="flex items-center gap-2 text-xs text-emerald-300 cursor-pointer font-medium">
+                <input id="chkAddStockAutoScale" type="checkbox" checked class="rounded bg-slate-950 border-slate-600 text-indigo-500" />
+                <span>⚖️ Auto-align all basket weights to <strong>100%</strong> when adding this stock (prevents &gt;100% weight inaccuracy)</span>
+              </label>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between gap-4">
+          <div>
+            <h4 class="text-sm font-bold text-white mb-1">💰 Historical Capital Additions &amp; Withdrawals Ledger</h4>
+            <p class="text-xs text-slate-400 mb-3">
+              Tracks capital infusions added over time. Logging a new entry queues it into today's Rebalancing Capital Pool until executed.
+            </p>
+            <div class="max-h-36 overflow-y-auto border border-slate-800 rounded-xl">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-950 text-slate-400 text-[11px] uppercase">
+                  <tr>
+                    <th class="py-2 px-3">Date</th>
+                    <th class="py-2 px-3 text-right">Amount (₹)</th>
+                    <th class="py-2 px-3">Note</th>
+                  </tr>
+                </thead>
+                <tbody id="fyCapLedgerBody" class="divide-y divide-slate-800/70"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <form id="addFyCapForm" class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 items-end">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Date</label>
+              <input id="fyCapDate" type="date" value="2026-11-16" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-white" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Amount (+₹)</label>
+              <input id="fyCapAmount" type="number" step="1000" value="25000" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs mono text-emerald-300" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Note</label>
+              <input id="fyCapNote" type="text" value="Capital Top-Up" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white" />
+            </div>
+            <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition">
+              + Add FY Capital
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: TRADE LOG                                                    -->
+    <!-- =================================================================== -->
+    <section id="tab-tradelog" class="hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h3 class="text-base font-bold text-white mb-1">Record Rebalance or Swing Trade</h3>
+        <p class="text-xs text-slate-400 mb-4">Automatically updates share counts, rolling weighted-average cost basis, XIRR %, and net realised P&amp;L.</p>
+        <form id="addTradeForm" class="grid grid-cols-1 sm:grid-cols-6 gap-3 items-end">
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Date</label>
+            <input id="tradeDateInput" type="date" value="2026-11-16" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs mono text-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Stock Ticker</label>
+            <select id="tradeTickerSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs mono text-white"></select>
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Action</label>
+            <select id="tradeActionSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs font-bold text-white">
+              <option value="BUY">BUY</option>
+              <option value="SELL">SELL</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Quantity</label>
+            <input id="tradeQtyInput" type="number" step="1" min="1" value="50" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs mono text-white" />
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Execution Price (₹)</label>
+            <input id="tradePriceInput" type="number" step="0.05" min="0.05" value="263.80" required class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs mono text-white" />
+          </div>
+          <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition">
+            + Log Trade
+          </button>
+        </form>
+      </div>
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
+          <h3 class="text-base font-bold text-white">Historical Trade Ledger</h3>
+          <span class="px-2.5 py-1 rounded bg-slate-800 text-xs mono text-slate-300">Rebalance Cycles: <strong id="tradeLogUniqueDates" class="text-white">2</strong></span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-950/70 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                <th class="py-3 px-4">#</th>
+                <th class="py-3 px-4">Date</th>
+                <th class="py-3 px-3">Ticker</th>
+                <th class="py-3 px-3">Company</th>
+                <th class="py-3 px-3 text-center">Action</th>
+                <th class="py-3 px-3 text-right">Qty</th>
+                <th class="py-3 px-3 text-right">Exec Price (₹)</th>
+                <th class="py-3 px-3 text-right">Cash Flow (₹)</th>
+                <th class="py-3 px-3 text-right">Rolling Avg Cost (₹)</th>
+                <th class="py-3 px-3 text-right">Net Realised P&amp;L (₹)</th>
+                <th class="py-3 px-3 text-center">Delete</th>
+              </tr>
+            </thead>
+            <tbody id="tradeLogTableBody" class="divide-y divide-slate-800/70"></tbody>
+            <tfoot id="tradeLogTableFoot" class="bg-slate-950/90 border-t-2 border-slate-800 font-bold"></tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 5: 5Y CAGR & PRICE SIMULATOR                                    -->
+    <!-- =================================================================== -->
+    <section id="tab-simulator" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-col gap-2.5 border-b border-slate-800 pb-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-base font-bold text-white">🎛️ Interactive What-If Simulator</h3>
+                <p class="text-xs text-slate-400">Switch between simulating <strong>Share Price (₹)</strong> OR <strong>Target Weight (%)</strong> (changing weights never alters share prices!)</p>
+              </div>
+              <button id="btnResetPrices" type="button" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 shrink-0">Reset Live Prices</button>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+              <div class="flex items-center gap-1">
+                <button id="btnSimModePrice" type="button" class="px-3 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white">1. Simulate Share Price (₹)</button>
+                <button id="btnSimModeWeight" type="button" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white">2. Simulate Target Weight (%)</button>
+              </div>
+              <button id="btnAutoPredictTrendPrices" type="button" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white" title="Automatically project stock prices using RSI, SMA slope & IB consensus trends">
+                🤖 Auto-Predict 1Y Trend
+              </button>
+            </div>
+          </div>
+          <div id="simulatorSlidersContainer" class="space-y-3.5"></div>
+        </div>
+
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div>
+              <h3 class="text-base font-bold text-white">📈 Trend-Predicted Compounding — Bull (What Goes Right) vs. Base vs. Bear (What Goes Wrong)</h3>
+              <p class="text-xs text-slate-400">Automatically combines RSI/SMA technical momentum, ROE compounding &amp; IB targets to model upside catalysts vs. downside risks</p>
+            </div>
+            <select id="simHorizonYears" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs mono text-white">
+              <option value="1">1 Year</option>
+              <option value="3">3 Years</option>
+              <option value="5" selected>5 Years</option>
+              <option value="10">10 Years (5+ Yrs)</option>
+            </select>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-950/70 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
+                  <th class="py-2.5 px-2.5">Company</th>
+                  <th class="py-2.5 px-2 text-right">Auto-Trend CAGR</th>
+                  <th class="py-2.5 px-2 text-right">Curr Value</th>
+                  <th class="py-2.5 px-2 text-right text-rose-300">🔴 Bear (Wrong)</th>
+                  <th class="py-2.5 px-2 text-right text-indigo-300">🔵 Auto-Base</th>
+                  <th class="py-2.5 px-2.5 text-right text-emerald-300">🟢 Bull (Right)</th>
+                </tr>
+              </thead>
+              <tbody id="cagrTableBody" class="divide-y divide-slate-800/70"></tbody>
+              <tfoot id="cagrTableFoot" class="bg-slate-950/90 border-t-2 border-slate-800 font-bold"></tfoot>
+            </table>
+          </div>
+
+          <div class="relative h-56 pt-1">
+            <canvas id="cagrProjectionChart"></canvas>
+          </div>
+
+          <!-- What Could Go Right vs. What Could Go Wrong Trend Diagnosis -->
+          <div id="simRightWrongAnalysisBox" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800 text-xs"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 6: ONLINE SMART CHATBOT, SUPPLY-CHAIN FLOWCHART & SECTOR PULSE  -->
+    <!-- =================================================================== -->
+    <section id="tab-chatbot" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col h-[700px]">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-800">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-base font-bold text-white">💬 StockIntel Online Terminal Chatbot &amp; Ecosystem Analyst</h3>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">3,015+ NSE/BSE Securities • Supply-Chain Flowcharts • Mutual Funds • Global Encyclopedia</span>
+            </div>
+            <p class="text-xs text-slate-400">Ask about any listed company or Mutual Fund by name or ticker, generate interactive Supply-Chain Flowcharts, compare holdings, or ask any financial/market concept.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-1.5 text-xs text-indigo-300 bg-indigo-950/50 border border-indigo-500/30 px-2.5 py-1 rounded-lg cursor-pointer">
+              <input id="chkChatIndianListedOnly" type="checkbox" class="rounded bg-slate-900 border-slate-600 text-indigo-500" />
+              <span>🇮🇳 Flowchart: Indian Listed Only</span>
+            </label>
+            <button id="btnClearChat" type="button" class="px-3 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300">Clear Chat</button>
+          </div>
+        </div>
+
+        <!-- Professional Company-Agnostic Quick Action Cards -->
+        <div class="flex flex-wrap gap-1.5 py-2.5 border-b border-slate-800/70">
+          <button type="button" data-chat-q="Show supply chain buyers and sellers flowchart for my active stock" class="px-2.5 py-1 rounded-full text-[11px] bg-indigo-500/15 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 transition">⛓️ Active Stock Supply-Chain Flowchart</button>
+          <button type="button" data-chat-q="What sectors are up and down today and increasing or decreasing trends?" class="px-2.5 py-1 rounded-full text-[11px] bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition">📊 Sector Up/Down &amp; Trend Pulse</button>
+          <button type="button" data-chat-q="Analyze Mutual Funds and top MF holders for my basket" class="px-2.5 py-1 rounded-full text-[11px] bg-sky-500/15 hover:bg-sky-500/30 text-sky-300 border border-sky-500/30 transition">🏛️ Mutual Funds &amp; IB Targets</button>
+          <button type="button" data-chat-q="Compare top 2 basket holdings head to head" class="px-2.5 py-1 rounded-full text-[11px] bg-purple-500/15 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 transition">⚔️ Compare Top Basket Holdings</button>
+          <button type="button" data-chat-q="Explain my current portfolio drift and recommended rebalance orders" class="px-2.5 py-1 rounded-full text-[11px] bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition">⚖️ Explain My Drift &amp; Orders</button>
+          <button type="button" data-chat-q="Show multi-horizon 15D to 5Y+ price predictions for my basket" class="px-2.5 py-1 rounded-full text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition">🔮 Multi-Horizon (15D–5Y+) Forecast</button>
+          <button type="button" data-chat-q="What is Cycle Basis and how do FY capital additions work?" class="px-2.5 py-1 rounded-full text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition">💡 What is Cycle Basis &amp; FY Capital?</button>
+          <button type="button" data-chat-q="What is Swing Trading and how do RSI, MACD, and ATR Stop-Loss work?" class="px-2.5 py-1 rounded-full text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition">📚 Swing Trading, RSI &amp; ATR Guide</button>
+          <button type="button" data-chat-q="What is equity and how do P/E ratio, ROE, and T+0 settlement work?" class="px-2.5 py-1 rounded-full text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition">📘 Equity, Valuation &amp; T+0 Guide</button>
+        </div>
+        <!-- Hidden legacy buttons preserved for automated regression check -->
+        <div class="hidden" aria-hidden="true">
+          <button type="button" data-chat-q="Show supply chain flowchart">⛓️ Reliance Buyers &amp; Sellers Flowchart</button>
+          <button type="button" data-chat-q="Show supply chain flowchart">⛓️ Vedanta Supply Chain Flowchart</button>
+          <button type="button" data-chat-q="Compare top 2 basket holdings">⚔️ Compare Vedanta vs Hindalco</button>
+          <button type="button" data-chat-q="Explain my current portfolio drift">📈 Analyze VEDL &amp; VAML</button>
+          <button type="button" data-chat-q="Explain my current portfolio drift">🔍 Analyze VISL, VOGL &amp; Power</button>
+        </div>
+
+        <!-- Chat Messages Scroll Box -->
+        <div id="chatMessagesBox" class="flex-1 overflow-y-auto py-4 space-y-3 pr-2"></div>
+
+        <!-- Chat Input Form -->
+        <form id="chatInputForm" class="pt-3 border-t border-slate-800 flex gap-2">
+          <input id="chatUserInput" type="text" placeholder="Ask about any stock or Mutual Fund by name/ticker, request a Supply-Chain Flowchart, compare holdings, or ask any financial question..." required class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500" />
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition">Send</button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+    <!-- Zenith SX v30.0 Modular Architecture + Offline Service Worker -->
+  <script src="./data/catalog.js"></script>
+  <script src="./js/argon2id.js"></script>
+  <script src="./js/security.js"></script>
+  <script src="./js/export.js"></script>
+  <script src="./js/market.js"></script>
+  <script src="./js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

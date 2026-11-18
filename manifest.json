@@ -1,0 +1,11 @@
+{
+  "name": "Zenith SX Investment Tracker",
+  "short_name": "Zenith SX",
+  "description": "Offline-Capable Portfolio Tracker, NSE/BSE Screener & Encrypted Cloud Sync",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "orientation": "portrait-primary"
+}

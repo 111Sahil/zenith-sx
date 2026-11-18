@@ -1,0 +1,19 @@
+{
+  "name": "zenith-sx-mobile",
+  "version": "30.0.0",
+  "description": "Zenith SX v30.0 \u2014 Argon2id (RFC 9106) Hardened Investment Tracker & Screener",
+  "scripts": {
+    "cap:init": "npx cap add android",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/filesystem": "^6.0.1",
+    "@capacitor/share": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}
